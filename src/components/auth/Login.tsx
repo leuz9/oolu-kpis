@@ -53,7 +53,7 @@ export default function Login() {
             <img 
               src="https://ignite-power.com/wp-content/uploads/2024/03/ignite-logo.png" 
               alt="Ignite Power" 
-              className="h-12 w-12 object-contain"
+              className="h-12 w-12 object-contain bg-white rounded-xl p-2"
             />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
@@ -61,19 +61,19 @@ export default function Login() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-200">
             Or{' '}
-            <Link to="/register" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+            <Link to="/register" className="font-medium text-white hover:text-primary-200 transition-colors">
               create a new account
             </Link>
           </p>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white/90 backdrop-blur-sm py-8 px-4 shadow-2xl sm:rounded-lg sm:px-10">
+          <div className="bg-white/10 backdrop-blur-lg py-8 px-4 shadow-2xl sm:rounded-lg sm:px-10 border border-white/20">
             {error && (
-              <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
+              <div className="mb-4 bg-red-500/10 border-l-4 border-red-500 p-4 rounded">
                 <div className="flex">
                   <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
+                    <p className="text-sm text-white">{error}</p>
                   </div>
                 </div>
               </div>
@@ -81,7 +81,7 @@ export default function Login() {
             
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="block text-sm font-medium text-white">
                   Email address
                 </label>
                 <div className="mt-1 flex rounded-md shadow-sm">
@@ -93,17 +93,17 @@ export default function Login() {
                     required
                     value={emailPrefix}
                     onChange={(e) => setEmailPrefix(e.target.value)}
-                    className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    className="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-white/10 bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                     placeholder="your.name"
                   />
-                  <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                  <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-white/10 bg-white/5 text-gray-300 text-sm">
                     {emailSuffix}
                   </span>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-white">
                   Password
                 </label>
                 <div className="mt-1 relative">
@@ -115,13 +115,13 @@ export default function Login() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    className="appearance-none block w-full px-3 py-2 border border-white/10 rounded-md bg-white/5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -136,7 +136,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <LogIn className="h-5 w-5 mr-2" />
                   {loading ? 'Signing in...' : 'Sign in'}

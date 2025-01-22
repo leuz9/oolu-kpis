@@ -9,7 +9,7 @@ import KPIOverview from './KPIOverview';
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -37,17 +37,30 @@ export default function Dashboard() {
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="flex items-center space-x-2 focus:outline-none"
                   >
-                    <img 
-                      src="https://ignite-power.com/wp-content/uploads/2024/03/ignite-logo.png"
-                      alt="Profile" 
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
+                    {user?.photoURL ? (
+                      <img 
+                        src={user.photoURL}
+                        alt={user.displayName || 'Profile'} 
+                        className="h-8 w-8 rounded-full object-cover"
+                        onError={(e) => {
+                          const img = e.target as HTMLImageElement;
+                          img.src = "https://ignite-power.com/wp-content/uploads/2024/03/ignite-logo.png";
+                        }}
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                        <span className="text-primary-600 font-medium text-sm">
+                          {user?.displayName?.charAt(0) || user?.email?.charAt(0) || '?'}
+                        </span>
+                      </div>
+                    )}
                   </button>
                   {profileOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
                       <button
                         onClick={() => {
                           navigate('/profile');
+                          setProfileOpen(false);
                         }}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >

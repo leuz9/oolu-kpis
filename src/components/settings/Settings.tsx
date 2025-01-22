@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../Sidebar';
 import { Bell, Lock, Globe, Moon, Mail } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import UserManagement from './UserManagement';
+import RolesManagement from './RolesManagement';
 
 export default function Settings() {
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -13,6 +17,14 @@ export default function Settings() {
         <h1 className="text-2xl font-bold text-gray-900 mb-8">Settings</h1>
 
         <div className="space-y-6">
+          {/* Admin Section */}
+          {user?.isAdmin && (
+            <>
+              <UserManagement />
+              <RolesManagement />
+            </>
+          )}
+
           {/* Notifications */}
           <div className="bg-white shadow-sm rounded-lg p-6">
             <div className="flex items-center text-lg font-medium text-gray-900 mb-4">

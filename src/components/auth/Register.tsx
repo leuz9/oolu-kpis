@@ -4,6 +4,7 @@ import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Register() {
+  const [displayName, setDisplayName] = useState('');
   const [emailPrefix, setEmailPrefix] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,7 +28,7 @@ export default function Register() {
     try {
       setError('');
       setLoading(true);
-      await register(email, password);
+      await register(email, password, displayName);
       navigate('/');
     } catch (error) {
       setError('Failed to create account');
@@ -86,6 +87,23 @@ export default function Register() {
             )}
 
             <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  placeholder="John Doe"
+                />
+              </div>
+
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email address

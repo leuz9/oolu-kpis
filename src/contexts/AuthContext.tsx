@@ -5,17 +5,20 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  User,
-  setPersistence,
-  browserSessionPersistence
+  updateProfile,
+  User as FirebaseUser
 } from 'firebase/auth';
 import { app } from '../config/firebase';
+import { userService } from '../services/userService';
+import type { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUserProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -33,26 +36,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const auth = getAuth(app);
 
-  // Configure session persistence
   useEffect(() => {
-    setPersistence(auth, browserSessionPersistence)
-      .catch((error) => {
-        console.error("Error setting persistence:", error);
-      });
-  }, [auth]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // Force token refresh every 24 hours
-        user.getIdToken(true)
-          .then(() => {
-            setUser(user);
-          })
-          .catch((error) => {
-            console.error("Error refreshing token:", error);
-            setUser(null);
-          });
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Get user data from Firestore
+          const userData = await userService.getUser(firebaseUser.uid);
+          setUser(userData);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -63,26 +57,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [auth]);
 
   const login = async (email: string, password: string) => {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    // Set token expiration to 24 hours
-    await result.user.getIdToken(true);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Update last login timestamp
+      await userService.updateLastLogin(result.user.uid);
+
+      // Force token refresh
+      await result.user.getIdToken(true);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  const register = async (email: string, password: string) => {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    // Set token expiration to 24 hours
-    await result.user.getIdToken(true);
+  const register = async (email: string, password: string, displayName: string) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update Firebase Auth profile
+      await updateProfile(result.user, {
+        displayName: displayName
+      });
+
+      // Create user document in Firestore
+      await userService.createUser(result.user.uid, {
+        email,
+        displayName
+      });
+
+      // Force token refresh
+      await result.user.getIdToken(true);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      if (user) {
+        // Update last seen timestamp before logging out
+        await userService.updateUser(user.id, {
+          lastSeen: new Date().toISOString()
+        });
+      }
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
+  const updateUserProfile = async (data: Partial<User>) => {
+    if (!user) throw new Error('No authenticated user');
+
+    try {
+      await userService.updateUser(user.id, data);
+
+      // Update local user state
+      setUser(prev => prev ? { ...prev, ...data } : null);
+
+      // Update Firebase Auth profile if necessary
+      if (data.displayName || data.photoURL) {
+        await updateProfile(auth.currentUser as FirebaseUser, {
+          displayName: data.displayName,
+          photoURL: data.photoURL
+        });
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      throw error;
+    }
   };
 
   const value = {
     user,
+    loading,
     login,
     register,
     logout,
+    updateUserProfile
   };
 
   return (

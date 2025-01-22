@@ -1,0 +1,232 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function hasRole(role) {
+      return request.auth.token.role == role;
+    }
+    
+    function hasPermission(permission) {
+      return request.auth.token.permissions[permission] == true;
+    }
+    
+    function isAdmin() {
+      return request.auth.token.isAdmin == true;
+    }
+    
+    function hasValidFields(requiredFields) {
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+    
+    function isValidDate(date) {
+      return date is string 
+        && date.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$')
+        && date <= request.time.toISOString();
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Team members collection rules
+    match /team/{memberId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && hasPermission('canCreateTeamMembers')
+        && hasValidFields([
+          'displayName', 
+          'email', 
+          'role', 
+          'department', 
+          'status',
+          'jobTitle',
+          'createdAt'
+        ])
+        && isValidDate(request.resource.data.createdAt);
+      allow update: if isSignedIn() 
+        && (
+          hasPermission('canEditTeamMembers') 
+          || (resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bio', 'phone', 'location', 'skills', 'languages', 'socialLinks']))
+        );
+      allow delete: if isSignedIn() && hasPermission('canDeleteTeamMembers');
+    }
+    
+    // Settings collection rules
+    match /settings/{userId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
+    }
+
+    // Projects collection rules
+    match /projects/{projectId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() 
+        && hasPermission('canCreateProjects')
+        && isValidProject();
+      allow update: if isSignedIn() 
+        && (hasPermission('canEditProjects') 
+            || resource.data.managerId == request.auth.uid 
+            || resource.data.teamMembers[request.auth.uid] != null)
+        && isValidProject();
+      allow delete: if isSignedIn() && hasPermission('canDeleteProjects');
+    }
+
+    // Objectives collection rules
+    match /objectives/{objectiveId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() 
+        && hasPermission('canCreateObjectives')
+        && isValidObjective();
+      allow update: if isSignedIn() 
+        && (hasPermission('canEditObjectives')
+            || resource.data.owner == request.auth.uid
+            || resource.data.contributors[request.auth.uid] != null)
+        && isValidObjective();
+      allow delete: if false; // Use archive instead
+    }
+
+    // KPIs collection rules
+    match /kpis/{kpiId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() 
+        && hasPermission('canEditKPIs')
+        && isValidKPI();
+      allow delete: if isAdmin();
+    }
+
+    // Departments collection rules
+    match /departments/{departmentId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || hasRole('director');
+    }
+
+    // Messages collection rules
+    match /messages/{messageId} {
+      allow read: if isSignedIn() 
+        && (
+          exists(/databases/$(database)/documents/channels/$(resource.data.channelId)/members/$(request.auth.uid))
+          || resource.data.sender.id == request.auth.uid
+        );
+      allow create: if isSignedIn()
+        && request.resource.data.sender.id == request.auth.uid
+        && exists(/databases/$(database)/documents/channels/$(request.resource.data.channelId)/members/$(request.auth.uid));
+      allow update: if isSignedIn() 
+        && resource.data.sender.id == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content', 'updatedAt', 'isEdited']);
+      allow delete: if isSignedIn() && resource.data.sender.id == request.auth.uid;
+    }
+
+    // Channels collection rules
+    match /channels/{channelId} {
+      allow read: if isSignedIn() 
+        && (
+          resource.data.type == 'group'
+          || resource.data.members[request.auth.uid] != null
+        );
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() 
+        && (
+          resource.data.members[request.auth.uid] != null
+          || hasPermission('canManageChannels')
+        );
+      allow delete: if isSignedIn() && hasPermission('canManageChannels');
+
+      match /members/{memberId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && (
+          memberId == request.auth.uid
+          || hasPermission('canManageChannels')
+        );
+      }
+    }
+
+    // API Keys collection rules
+    match /api_keys/{keyId} {
+      allow read: if isSignedIn() && isAdmin();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // Support tickets collection rules
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn() 
+        && (
+          resource.data.createdBy == request.auth.uid
+          || hasPermission('canManageTickets')
+        );
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() 
+        && (
+          resource.data.createdBy == request.auth.uid
+          || hasPermission('canManageTickets')
+        );
+      allow delete: if isSignedIn() && hasPermission('canManageTickets');
+    }
+
+    // Audit logs collection rules
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Function to validate project data
+    function isValidProject() {
+      let data = request.resource.data;
+      return data.name is string
+        && data.name.size() > 0
+        && data.description is string
+        && isValidDate(data.startDate)
+        && isValidDate(data.dueDate)
+        && data.status in ['planning', 'in-progress', 'completed', 'on-hold', 'cancelled']
+        && data.progress is number
+        && data.progress >= 0
+        && data.progress <= 100
+        && data.managerId is string
+        && data.teamMembers is list
+        && data.objectives is list
+        && data.tasks is list
+        && data.risks is list
+        && data.updates is list
+        && data.documents is list;
+    }
+
+    // Function to validate objective data
+    function isValidObjective() {
+      let data = request.resource.data;
+      return data.title is string
+        && data.title.size() > 0
+        && data.description is string
+        && data.progress is number
+        && data.progress >= 0
+        && data.progress <= 100
+        && data.status in ['on-track', 'at-risk', 'behind', 'archived']
+        && data.level in ['company', 'department', 'individual']
+        && data.keyResults is list;
+    }
+
+    // Function to validate KPI data
+    function isValidKPI() {
+      let data = request.resource.data;
+      return data.name is string
+        && data.name.size() > 0
+        && data.value is number
+        && data.target is number
+        && data.trend in ['up', 'down', 'stable']
+        && data.category is string
+        && data.frequency in ['daily', 'weekly', 'monthly', 'quarterly']
+        && data.history is list;
+    }
+  }
+}
