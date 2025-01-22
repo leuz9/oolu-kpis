@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Target, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Register() {
@@ -48,7 +48,7 @@ export default function Register() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="https://cdn.pixabay.com/video/2018/03/02/14609-258212436_large.mp4" type="video/mp4" />
+          <source src="https://cdn.pixabay.com/video/2023/06/25/168801-839864542_large.mp4" type="video/mp4" />
         </video>
       </div>
 
