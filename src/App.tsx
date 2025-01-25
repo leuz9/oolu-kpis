@@ -50,7 +50,7 @@ function AppRoutes() {
             <Dashboard />
           </PrivateRoute>
         } />
-        <Route path="/objectives" element={
+        <Route path="/objectives/*" element={
           <PrivateRoute>
             <Objectives />
           </PrivateRoute>

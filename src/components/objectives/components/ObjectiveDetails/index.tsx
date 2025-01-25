@@ -27,6 +27,7 @@ export default function ObjectiveDetails({
   const [linkedKPIs, setLinkedKPIs] = useState<KPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     if (objective?.id) {
@@ -75,6 +76,21 @@ export default function ObjectiveDetails({
     }
   };
 
+  const handleUpdate = async () => {
+    try {
+      setUpdating(true);
+      setError(null);
+      const newProgress = await objectiveService.calculateProgress(objective.id);
+      objective.progress = newProgress;
+      await fetchLinkedKPIs();
+    } catch (err) {
+      console.error('Error updating objective progress:', err);
+      setError('Failed to update objective progress');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (!objective) {
     return null;
   }
@@ -101,6 +117,8 @@ export default function ObjectiveDetails({
         <Actions
           onEdit={onEdit}
           onArchive={onArchive}
+          onUpdate={handleUpdate}
+          updating={updating}
         />
       </div>
 

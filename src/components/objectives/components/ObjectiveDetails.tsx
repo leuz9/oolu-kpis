@@ -222,7 +222,6 @@ export default function ObjectiveDetails({
         </div>
 
         {/* Key Results Section */}
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Key Results</h3>
         <div className="space-y-4">
           {objective.keyResults?.map(kr => (
             <KeyResultCard key={kr.id} keyResult={kr} />
@@ -240,13 +239,7 @@ export default function ObjectiveDetails({
               <Pencil className="h-4 w-4 mr-2" />
               Edit Objective
             </button>
-            <button
-              onClick={onAddKeyResult}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Key Result
-            </button>
+           
           </div>
           <button
             onClick={onArchive}

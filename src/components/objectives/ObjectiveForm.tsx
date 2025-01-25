@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Target, AlertTriangle, Users } from 'lucide-react';
+import { X, Plus, Target, AlertTriangle } from 'lucide-react';
 import { kpiService } from '../../services/kpiService';
 import { userService } from '../../services/userService';
+import { objectiveService } from '../../services/objectiveService';
 import KPIForm from '../kpis/components/KPIForm';
-import type { KPI, User } from '../../types';
+import BasicInformation from './components/ObjectiveForm/BasicInformation';
+import Classification from './components/ObjectiveForm/Classification';
+import Timeline from './components/ObjectiveForm/Timeline';
+import Contributors from './components/ObjectiveForm/Contributors';
+import LinkedKPIs from './components/ObjectiveForm/LinkedKPIs';
+import FormActions from './components/ObjectiveForm/FormActions';
+import ParentObjectiveSelect from './components/ObjectiveForm/ParentObjectiveSelect';
+import type { KPI, User, Objective } from '../../types';
 
 interface ObjectiveFormProps {
   onClose: () => void;
@@ -21,7 +29,6 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
       'company',
     status: 'on-track',
     dueDate: '',
-    weight: 1,
     quarter: `${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth() / 3) + 1}`,
     parentId: parentObjective?.id || null,
     kpiIds: [],
@@ -35,10 +42,13 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [loadingObjectives, setLoadingObjectives] = useState(true);
 
   useEffect(() => {
     fetchKPIs();
     fetchUsers();
+    fetchObjectives();
   }, []);
 
   useEffect(() => {
@@ -73,6 +83,19 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
     }
   };
 
+  const fetchObjectives = async () => {
+    try {
+      setLoadingObjectives(true);
+      const fetchedObjectives = await objectiveService.getObjectives();
+      setObjectives(fetchedObjectives);
+    } catch (err) {
+      console.error('Error fetching objectives:', err);
+      setError('Failed to load objectives');
+    } finally {
+      setLoadingObjectives(false);
+    }
+  };
+
   const loadSelectedKPIs = async (kpiIds: string[]) => {
     try {
       const kpis = await Promise.all(
@@ -84,13 +107,38 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
     }
   };
 
-  const handleKPISelect = (kpiId: string) => {
-    const isSelected = formData.kpiIds.includes(kpiId);
-    const newKpiIds = isSelected
-      ? formData.kpiIds.filter(id => id !== kpiId)
-      : [...formData.kpiIds, kpiId];
+  const handleFieldChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
     
-    setFormData({ ...formData, kpiIds: newKpiIds });
+    // Reset error when changing level or parent
+    if (field === 'level' || field === 'parentId') {
+      setError(null);
+    }
+  };
+
+  const handleKPISelect = async (kpiId: string) => {
+    try {
+      const isSelected = formData.kpiIds.includes(kpiId);
+      const newKpiIds = isSelected
+        ? formData.kpiIds.filter(id => id !== kpiId)
+        : [...formData.kpiIds, kpiId];
+      
+      setFormData({ ...formData, kpiIds: newKpiIds });
+
+      // Update KPI's objectiveIds
+      const kpi = availableKPIs.find(k => k.id === kpiId);
+      if (kpi) {
+        await kpiService.updateKPI(kpiId, {
+          ...kpi,
+          objectiveIds: isSelected
+            ? kpi.objectiveIds.filter(id => id !== formData.id)
+            : [...(kpi.objectiveIds || []), formData.id]
+        });
+      }
+    } catch (err) {
+      console.error('Error updating KPI:', err);
+      setError('Failed to update KPI linkage');
+    }
   };
 
   const handleUserSelect = (userId: string) => {
@@ -104,9 +152,14 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
 
   const handleCreateKPI = async (kpiData: Partial<KPI>) => {
     try {
-      const newKPI = await kpiService.addKPI(kpiData as KPI);
+      // Add current objective ID to the KPI's objectiveIds
+      const newKPI = await kpiService.addKPI({
+        ...kpiData,
+        objectiveIds: formData.id ? [formData.id] : []
+      } as KPI);
+      
       setAvailableKPIs(prev => [...prev, newKPI]);
-      handleKPISelect(newKPI.id); // Automatically select the newly created KPI
+      handleKPISelect(newKPI.id);
       setShowKPIForm(false);
     } catch (err) {
       console.error('Error creating KPI:', err);
@@ -116,8 +169,15 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    // Validate user assignments based on level
+    // Validation du parent obligatoire pour les niveaux department et individual
+    if (formData.level !== 'company' && !formData.parentId) {
+      setError('Please select a parent objective');
+      return;
+    }
+
+    // Validation des contributeurs
     if (formData.level !== 'company' && formData.contributors.length === 0) {
       setError('Please assign at least one user to this objective');
       return;
@@ -164,228 +224,84 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Title</label>
-              <input
-                type="text"
-                required
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                placeholder="Enter objective title"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                rows={3}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                placeholder="Describe the objective"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Level</label>
-                <select
-                  value={formData.level}
-                  onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  disabled={!!parentObjective}
-                >
-                  <option value="company">Company</option>
-                  <option value="department">Department</option>
-                  <option value="individual">Individual</option>
-                </select>
-              </div>
-
-              {formData.level === 'department' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Department</label>
-                  <select
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    required
-                  >
-                    <option value="">Select Department</option>
-                    {Array.from(new Set(users.map(user => user.department))).filter(Boolean).map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quarter</label>
-                <select
-                  value={formData.quarter}
-                  onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  {[...Array(4)].map((_, i) => (
-                    <option key={i} value={`${new Date().getFullYear()}-Q${i + 1}`}>
-                      {new Date().getFullYear()} Q{i + 1}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Due Date</label>
-                <input
-                  type="date"
-                  required
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-
-            {/* Contributors Section */}
-            {formData.level !== 'company' && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {formData.level === 'department' ? 'Department Members' : 'Assignee'}
-                  </label>
-                  <span className="text-sm text-gray-500">
-                    {formData.contributors.length} selected
-                  </span>
-                </div>
-
-                {loadingUsers ? (
-                  <div className="flex items-center justify-center h-20">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredUsers.map((user) => (
-                      <div
-                        key={user.id}
-                        className={`p-4 rounded-lg border ${
-                          formData.contributors.includes(user.id)
-                            ? 'border-indigo-500 bg-indigo-50'
-                            : 'border-gray-200 hover:border-indigo-300'
-                        } cursor-pointer transition-colors`}
-                        onClick={() => handleUserSelect(user.id)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            {user.photoURL ? (
-                              <img
-                                src={user.photoURL}
-                                alt={user.displayName || ''}
-                                className="h-8 w-8 rounded-full"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                                <span className="text-indigo-600 font-medium text-sm">
-                                  {user.displayName?.charAt(0) || user.email.charAt(0)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {user.displayName || user.email}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {user.role}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* KPIs Section */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-gray-700">Key Performance Indicators</label>
-                <button
-                  type="button"
-                  onClick={() => setShowKPIForm(true)}
-                  className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Create New KPI
-                </button>
-              </div>
-
-              {loadingKPIs ? (
-                <div className="flex items-center justify-center h-20">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {availableKPIs.map((kpi) => (
-                    <div
-                      key={kpi.id}
-                      className={`p-4 rounded-lg border ${
-                        formData.kpiIds.includes(kpi.id)
-                          ? 'border-indigo-500 bg-indigo-50'
-                          : 'border-gray-200 hover:border-indigo-300'
-                      } cursor-pointer transition-colors`}
-                      onClick={() => handleKPISelect(kpi.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">{kpi.name}</h4>
-                          <p className="text-xs text-gray-500">{kpi.category}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            kpi.status === 'on-track' ? 'bg-green-100 text-green-800' :
-                            kpi.status === 'at-risk' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {kpi.status.replace('-', ' ')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-2">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>Progress</span>
-                          <span>{kpi.progress}%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-gray-200 rounded-full">
-                          <div
-                            className="h-1.5 bg-indigo-600 rounded-full"
-                            style={{ width: `${kpi.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Basic Information */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Basic Information</h3>
+            <BasicInformation
+              title={formData.title}
+              description={formData.description}
+              onChange={handleFieldChange}
+            />
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-            >
-              {initialData ? 'Save Changes' : 'Create Objective'}
-            </button>
+          {/* Classification */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Classification</h3>
+            <Classification
+              level={formData.level}
+              quarter={formData.quarter}
+              department={formData.department}
+              departments={Array.from(new Set(users.map(user => user.department))).filter(Boolean)}
+              parentObjective={parentObjective}
+              onChange={handleFieldChange}
+            />
           </div>
+
+          {/* Parent Objective */}
+          {formData.level !== 'company' && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Parent Objective</h3>
+              <ParentObjectiveSelect
+                objectives={objectives}
+                selectedObjectiveId={formData.parentId}
+                level={formData.level}
+                onChange={(objectiveId) => handleFieldChange('parentId', objectiveId)}
+                loading={loadingObjectives}
+                error={error && !formData.parentId ? 'Parent objective is required' : null}
+              />
+            </div>
+          )}
+
+          {/* Timeline */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Timeline</h3>
+            <Timeline
+              dueDate={formData.dueDate}
+              onChange={handleFieldChange}
+            />
+          </div>
+
+          {/* Contributors */}
+          {formData.level !== 'company' && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Contributors</h3>
+              <Contributors
+                level={formData.level}
+                contributors={formData.contributors}
+                users={filteredUsers}
+                loading={loadingUsers}
+                onSelect={handleUserSelect}
+              />
+            </div>
+          )}
+
+          {/* KPIs */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Key Performance Indicators</h3>
+            <LinkedKPIs
+              kpis={availableKPIs}
+              selectedKPIs={formData.kpiIds}
+              loading={loadingKPIs}
+              onSelect={handleKPISelect}
+              onCreateNew={() => setShowKPIForm(true)}
+            />
+          </div>
+
+          {/* Form Actions */}
+          <FormActions
+            onCancel={onClose}
+            isEdit={!!initialData}
+          />
         </form>
       </div>
 
@@ -393,6 +309,9 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
         <KPIForm
           onClose={() => setShowKPIForm(false)}
           onSubmit={handleCreateKPI}
+          initialData={{
+            objectiveIds: formData.id ? [formData.id] : []
+          }}
         />
       )}
     </div>

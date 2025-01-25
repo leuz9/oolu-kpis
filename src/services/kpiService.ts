@@ -1,5 +1,6 @@
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { objectiveService } from './objectiveService';
 import type { KPI } from '../types';
 
 const COLLECTION_NAME = 'kpis';
@@ -101,6 +102,15 @@ export const kpiService = {
       });
       
       await batch.commit();
+
+      // Recalculate progress for all linked objectives
+      if (currentKpi.objectiveIds?.length) {
+        await Promise.all(
+          currentKpi.objectiveIds.map(objectiveId => 
+            objectiveService.calculateProgress(objectiveId)
+          )
+        );
+      }
       
       return {
         id,

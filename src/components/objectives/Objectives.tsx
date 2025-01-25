@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { objectiveService } from '../../services/objectiveService';
-import { kpiService } from '../../services/kpiService';
 import Sidebar from '../Sidebar';
-import ObjectiveHierarchy from './ObjectiveHierarchy';
+import ObjectiveHierarchy from './components/ObjectiveHierarchy';
 import ObjectiveForm from './ObjectiveForm';
 import ObjectiveHeader from './components/ObjectiveHeader';
-import ErrorAlert from './components/ErrorAlert';
-import LoadingSpinner from './components/LoadingSpinner';
 import ObjectiveDetails from './components/ObjectiveDetails';
-import EmptyObjectiveState from './components/EmptyObjectiveState';
-import ArchiveConfirmModal from './components/ArchiveConfirmModal';
+import { Target, AlertTriangle } from 'lucide-react';
 import type { Objective } from '../../types';
 
 export default function Objectives() {
@@ -17,7 +13,6 @@ export default function Objectives() {
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +69,6 @@ export default function Objectives() {
     try {
       await objectiveService.archiveObjective(selectedObjective.id);
       setObjectives(prev => prev.filter(obj => obj.id !== selectedObjective.id));
-      setShowArchiveConfirm(false);
       setSelectedObjective(null);
     } catch (err) {
       setError('Failed to archive objective. Please try again.');
@@ -87,13 +81,10 @@ export default function Objectives() {
 
     try {
       await objectiveService.linkKPI(selectedObjective.id, kpiId);
-      
-      // Update the selected objective with the new KPI
       const updatedObjective = {
         ...selectedObjective,
         kpiIds: [...(selectedObjective.kpiIds || []), kpiId]
       };
-      
       setObjectives(prev => prev.map(obj =>
         obj.id === selectedObjective.id ? updatedObjective : obj
       ));
@@ -109,13 +100,10 @@ export default function Objectives() {
 
     try {
       await objectiveService.unlinkKPI(selectedObjective.id, kpiId);
-      
-      // Update the selected objective by removing the KPI
       const updatedObjective = {
         ...selectedObjective,
         kpiIds: selectedObjective.kpiIds?.filter(id => id !== kpiId) || []
       };
-      
       setObjectives(prev => prev.map(obj =>
         obj.id === selectedObjective.id ? updatedObjective : obj
       ));
@@ -132,11 +120,24 @@ export default function Objectives() {
       
       <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
         <div className="max-w-7xl mx-auto">
-          <ObjectiveHeader onAddClick={() => setShowAddModal(true)} />
-          <ErrorAlert message={error} />
+          <ObjectiveHeader 
+            onAddClick={() => setShowAddModal(true)} 
+            parentObjective={selectedObjective}
+          />
+
+          {error && (
+            <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
+              <div className="flex">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <p className="ml-3 text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          )}
 
           {loading ? (
-            <LoadingSpinner />
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-1">
@@ -151,12 +152,16 @@ export default function Objectives() {
                   <ObjectiveDetails
                     objective={selectedObjective}
                     onEdit={() => setShowEditModal(true)}
-                    onArchive={() => setShowArchiveConfirm(true)}
+                    onArchive={handleArchiveObjective}
                     onLinkKPI={handleLinkKPI}
                     onUnlinkKPI={handleUnlinkKPI}
                   />
                 ) : (
-                  <EmptyObjectiveState />
+                  <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center justify-center text-gray-500 h-96">
+                    <Target className="h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-lg font-medium mb-2">No objective selected</p>
+                    <p className="text-sm">Select an objective from the hierarchy to view details</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -177,13 +182,6 @@ export default function Objectives() {
           onClose={() => setShowEditModal(false)}
           onSubmit={handleEditObjective}
           initialData={selectedObjective}
-        />
-      )}
-
-      {showArchiveConfirm && (
-        <ArchiveConfirmModal
-          onConfirm={handleArchiveObjective}
-          onCancel={() => setShowArchiveConfirm(false)}
         />
       )}
     </div>
