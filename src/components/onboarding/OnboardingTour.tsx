@@ -1,38 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { onboardingService } from '../../services/onboardingService';
 import { 
+  Home, 
   Target, 
   PieChart, 
   Users, 
   Briefcase, 
-  Settings,
-  ChevronRight,
-  ChevronLeft,
-  X,
-  CheckCircle2,
-  HelpCircle,
-  Book,
-  MessageSquare,
-  Calendar,
+  Book, 
+  Bell,
+  UserCog,
+  BarChart3,
+  FileText,
+  Shield,
   Building2,
+  Calendar,
+  MessageSquare,
   Link2,
   Database,
   FileCode,
-  Shield
+  HelpCircle,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle2
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import type { OnboardingStep } from '../../types';
 
-interface Step {
-  id: string;
-  title: string;
-  description: string;
-  path: string;
-  icon: React.ReactNode;
-  features: string[];
-  adminOnly?: boolean;
-}
-
-const ONBOARDING_STEPS: Step[] = [
+const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 'getting-started',
     title: 'Welcome to OKRFlow',
@@ -192,19 +188,6 @@ const ONBOARDING_STEPS: Step[] = [
       'Live chat support',
       'Video tutorials'
     ]
-  },
-  {
-    id: 'settings',
-    title: 'Settings & Preferences',
-    description: 'Configure your account and preferences',
-    path: '/settings',
-    icon: <Settings className="h-8 w-8 text-primary-600" />,
-    features: [
-      'Update profile information',
-      'Configure notifications',
-      'Manage security settings',
-      'Customize your experience'
-    ]
   }
 ];
 
@@ -218,24 +201,17 @@ export default function OnboardingTour() {
   useEffect(() => {
     if (!user) return;
 
-    // Check if user has completed onboarding
-    const hasCompletedOnboarding = localStorage.getItem(`onboarding-completed-${user.id}`);
-    // Check if this is user's first login
-    const isFirstLogin = !localStorage.getItem(`has-logged-in-${user.id}`);
+    const loadOnboardingProgress = async () => {
+      try {
+        const progress = await onboardingService.getProgress(user.id);
+        setCompletedSteps(progress.completedSteps);
+        setShowTour(!progress.dismissed);
+      } catch (err) {
+        console.error('Error loading onboarding progress:', err);
+      }
+    };
 
-    if (isFirstLogin) {
-      // Mark that user has logged in
-      localStorage.setItem(`has-logged-in-${user.id}`, 'true');
-      setShowTour(true);
-    } else {
-      setShowTour(false);
-    }
-
-    // Load completed steps if any
-    const savedSteps = localStorage.getItem(`onboarding-steps-${user.id}`);
-    if (savedSteps) {
-      setCompletedSteps(JSON.parse(savedSteps));
-    }
+    loadOnboardingProgress();
   }, [user]);
 
   // Filter steps based on user role
@@ -243,16 +219,22 @@ export default function OnboardingTour() {
     !step.adminOnly || user?.isAdmin
   );
 
-  const handleStepComplete = (stepId: string) => {
+  const handleStepComplete = async (stepId: string) => {
     if (!user) return;
 
-    const newCompletedSteps = [...completedSteps, stepId];
-    setCompletedSteps(newCompletedSteps);
-    localStorage.setItem(`onboarding-steps-${user.id}`, JSON.stringify(newCompletedSteps));
+    try {
+      await onboardingService.completeStep(user.id, stepId);
+      const newCompletedSteps = [...completedSteps, stepId];
+      setCompletedSteps(newCompletedSteps);
 
-    // If all steps are completed, mark onboarding as complete
-    if (newCompletedSteps.length === filteredSteps.length) {
-      localStorage.setItem(`onboarding-completed-${user.id}`, 'true');
+      // If all steps are completed, mark onboarding as complete
+      if (newCompletedSteps.length === filteredSteps.length) {
+        await onboardingService.updateProgress(user.id, {
+          completedAt: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.error('Error completing onboarding step:', err);
     }
   };
 
@@ -270,25 +252,34 @@ export default function OnboardingTour() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (!user) return;
     
-    setShowTour(false);
-    // Mark onboarding as completed when skipped
-    localStorage.setItem(`onboarding-completed-${user.id}`, 'true');
+    try {
+      await onboardingService.dismissOnboarding(user.id);
+      setShowTour(false);
+    } catch (err) {
+      console.error('Error dismissing onboarding:', err);
+    }
   };
 
-  const handleShowTour = () => {
+  const handleShowTour = async () => {
     if (!user) return;
     
-    setShowTour(true);
-    // Remove completed status to allow tour to be shown again
-    localStorage.removeItem(`onboarding-completed-${user.id}`);
+    try {
+      await onboardingService.resetOnboarding(user.id);
+      setShowTour(true);
+      setCurrentStep(0);
+      setCompletedSteps([]);
+      navigate(filteredSteps[0].path);
+    } catch (err) {
+      console.error('Error resetting onboarding:', err);
+    }
   };
 
   if (!showTour) {
     // Only show help button if user has completed onboarding
-    const hasCompletedOnboarding = user && localStorage.getItem(`onboarding-completed-${user.id}`);
+    const hasCompletedOnboarding = completedSteps.length === filteredSteps.length;
     
     if (hasCompletedOnboarding) {
       return (

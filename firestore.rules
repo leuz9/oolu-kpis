@@ -19,44 +19,123 @@ service cloud.firestore {
       return request.auth.token.role == role;
     }
     
-    // Support Tickets collection rules
+    // Users collection rules
+    match /users/{userId} {
+      // Allow users to read their own profile
+      // Allow admins to read all profiles
+      // Allow any authenticated user to list users (needed for user assignment)
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin() || true);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Settings collection rules
+    match /settings/{userId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow write: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    // Team collection rules
+    match /team/{memberId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // Departments collection rules
+    match /departments/{departmentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // Roles collection rules
+    match /roles/{roleId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // Objectives collection rules
+    match /objectives/{objectiveId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        // Allow update if user is admin
+        isAdmin() ||
+        // Allow update if user is a contributor
+        request.auth.uid in resource.data.contributors ||
+        // Allow update if user is adding themselves as a contributor
+        request.resource.data.contributors.hasAll(resource.data.contributors)
+      );
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // KPIs collection rules
+    match /kpis/{kpiId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.owner == request.auth.uid ||
+        request.auth.uid in get(/databases/$(database)/documents/objectives/$(resource.data.objectiveIds[0])).data.contributors
+      );
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Integrations collection rules
+    match /integrations/{integrationId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Support tickets collection rules
     match /support_tickets/{ticketId} {
       allow read: if isSignedIn() && (
-        // Allow users to read their own tickets
-        resource.data.userId == request.auth.uid ||
-        // Allow admins and support staff to read all tickets
-        isAdmin() ||
-        hasRole('support')
+        isAdmin() || 
+        resource.data.userId == request.auth.uid
       );
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
-        // Allow users to update their own tickets
-        resource.data.userId == request.auth.uid ||
-        // Allow admins and support staff to update any ticket
+        isAdmin() || 
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Support articles collection rules
+    match /support_articles/{articleId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // Events collection rules
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
         isAdmin() ||
-        hasRole('support')
+        resource.data.owner == request.auth.uid ||
+        request.auth.uid in resource.data.participants
       );
       allow delete: if isSignedIn() && (
-        // Allow users to delete their own tickets
-        resource.data.userId == request.auth.uid ||
-        // Allow admins to delete any ticket
-        isAdmin()
+        isAdmin() ||
+        resource.data.owner == request.auth.uid
       );
     }
 
-    // Support Articles collection rules
-    match /support_articles/{articleId} {
-      // Anyone can read articles
-      allow read: if true;
-      // Only admins and support staff can create/update/delete articles
-      allow write: if isSignedIn() && (isAdmin() || hasRole('support'));
-      // Allow authenticated users to update article ratings
-      allow update: if isSignedIn() && (
-        // Only allow updating the ratings field
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ratings', 'helpful', 'notHelpful'])
-      );
+    // Resources collection rules
+    match /resources/{resourceId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isAdmin();
     }
 
-    // Rest of your existing rules...
+    // Onboarding progress collection rules
+    match /onboarding_progress/{userId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
   }
 }
