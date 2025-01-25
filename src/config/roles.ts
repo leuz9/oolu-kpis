@@ -129,8 +129,7 @@ const defaultPermissions: RolePermissions = {
   canCreateQualityMetrics: false,
   canPerformQualityChecks: false,
   canApproveQualityStandards: false,
-  canManageCompliance: false,
-  canViewQualityReports: false,
+  canViewQualityReports: false
 };
 
 // Role configurations with specific permissions
