@@ -21,21 +21,22 @@ export const analytics = getAnalytics(app);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Enable offline persistence with error handling
-try {
-  await enableIndexedDbPersistence(db);
-  console.log('Firebase persistence enabled');
-} catch (err: any) {
-  if (err.code === 'failed-precondition') {
-    // Multiple tabs open, persistence can only be enabled in one tab at a time.
-    console.warn('Firebase persistence failed: Multiple tabs open');
-  } else if (err.code === 'unimplemented') {
-    // The current browser doesn't support persistence
-    console.warn('Firebase persistence not supported in this browser');
-  } else {
-    console.error('Error enabling Firebase persistence:', err);
-  }
-}
+// Enable offline persistence
+enableIndexedDbPersistence(db)
+  .then(() => {
+    console.log('Firebase persistence enabled');
+  })
+  .catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // Multiple tabs open, persistence can only be enabled in one tab at a time.
+      console.warn('Firebase persistence failed: Multiple tabs open');
+    } else if (err.code === 'unimplemented') {
+      // The current browser doesn't support persistence
+      console.warn('Firebase persistence not supported in this browser');
+    } else {
+      console.error('Error enabling Firebase persistence:', err);
+    }
+  });
 
 // Add auth state change listener
 auth.onAuthStateChanged((user) => {
