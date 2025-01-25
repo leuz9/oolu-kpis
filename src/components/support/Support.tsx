@@ -16,7 +16,10 @@ import {
   CheckCircle2,
   X,
   Plus,
-  Filter
+  Filter,
+  Clock,
+  Plus as PlusIcon,
+  Filter as FilterIcon
 } from 'lucide-react';
 
 interface Article {

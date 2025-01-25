@@ -28,6 +28,8 @@ export const menuItems: MenuItem[] = [
   { icon: Briefcase, label: 'Projects', path: '/projects' },
   { icon: Book, label: 'Documentation', path: '/documentation' },
   { icon: Bell, label: 'Notifications', path: '/notifications' },
+  { icon: Calendar, label: 'Planning', path: '/planning' },
+  { icon: MessageSquare, label: 'Messages', path: '/messages' },
   
   // Admin Only Menus
   { icon: UserCog, label: 'User Management', path: '/users', adminOnly: true },
@@ -35,8 +37,6 @@ export const menuItems: MenuItem[] = [
   { icon: FileText, label: 'Reports', path: '/reports', adminOnly: true },
   { icon: Shield, label: 'Security', path: '/security', adminOnly: true },
   { icon: Building2, label: 'Departments', path: '/departments', adminOnly: true },
-  { icon: Calendar, label: 'Planning', path: '/planning' },
-  { icon: MessageSquare, label: 'Messages', path: '/messages' },
   { icon: Link2, label: 'Integrations', path: '/integrations', adminOnly: true },
   { icon: Database, label: 'API', path: '/api', adminOnly: true },
   { icon: FileCode, label: 'Support', path: '/support' }
