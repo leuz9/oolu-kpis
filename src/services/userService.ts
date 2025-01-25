@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { db } from '../config/firebase';
 import { ROLES } from '../config/roles';
 import type { User, UserRole, TeamMember } from '../types';
@@ -9,12 +10,9 @@ const TEAM_COLLECTION = 'team';
 export const userService = {
   async createUser(userId: string, data: Partial<User>) {
     try {
-      // Set default role as senior_employee with corresponding permissions
-      const defaultRole: UserRole = 'senior_employee';
+      const defaultRole: UserRole = 'employee';
       const timestamp = new Date().toISOString();
-
-      // Get permissions for senior employee role
-      const seniorEmployeePermissions = ROLES[defaultRole].permissions;
+      const employeePermissions = ROLES[defaultRole].permissions;
 
       const userData = {
         id: userId,
@@ -23,13 +21,13 @@ export const userService = {
         role: defaultRole,
         department: '',
         photoURL: null,
-        isAdmin: false, // Senior employees are not admins
+        isAdmin: false,
         createdAt: timestamp,
         lastLogin: timestamp,
-        permissions: seniorEmployeePermissions,
+        permissions: employeePermissions,
         customClaims: {
           role: defaultRole,
-          permissions: seniorEmployeePermissions,
+          permissions: employeePermissions,
           isAdmin: false
         }
       };

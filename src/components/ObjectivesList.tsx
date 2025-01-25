@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { ChevronRight, Circle, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ChevronRight, Circle, Plus, Pencil, Trash2, Target, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import type { Objective, KPI } from '../types';
 
-const initialObjectives = [
+interface ObjectiveWithKPIs extends Objective {
+  linkedKPIs?: KPI[];
+}
+
+const initialObjectives: ObjectiveWithKPIs[] = [
   {
     id: '1',
     title: 'Increase Customer Satisfaction',
@@ -9,10 +14,45 @@ const initialObjectives = [
     progress: 75,
     status: 'on-track',
     dueDate: '2024-06-30',
-    keyResults: [
-      { id: 'kr1', title: 'Achieve NPS score of 60+', current: 55, target: 60 },
-      { id: 'kr2', title: 'Reduce customer support response time', current: 4, target: 2 }
-    ]
+    level: 'company',
+    kpiIds: ['1', '2'],
+    linkedKPIs: [
+      {
+        id: '1',
+        name: 'Customer Satisfaction Score',
+        value: 85,
+        target: 90,
+        unit: '%',
+        progress: 94,
+        trend: 'up',
+        status: 'on-track',
+        category: 'Customer',
+        startDate: '2024-01-01',
+        dueDate: '2024-12-31',
+        lastUpdated: '2024-03-15',
+        history: [],
+        objectiveIds: ['1']
+      },
+      {
+        id: '2',
+        name: 'Support Response Time',
+        value: 4,
+        target: 2,
+        unit: 'hours',
+        progress: 50,
+        trend: 'down',
+        status: 'at-risk',
+        category: 'Support',
+        startDate: '2024-01-01',
+        dueDate: '2024-12-31',
+        lastUpdated: '2024-03-15',
+        history: [],
+        objectiveIds: ['1']
+      }
+    ],
+    contributors: [],
+    createdAt: '2024-01-01',
+    updatedAt: '2024-03-15'
   },
   {
     id: '2',
@@ -21,23 +61,30 @@ const initialObjectives = [
     progress: 45,
     status: 'at-risk',
     dueDate: '2024-05-15',
-    keyResults: [
-      { id: 'kr3', title: 'Complete MVP development', current: 70, target: 100 },
-      { id: 'kr4', title: 'Achieve 1000 beta users', current: 250, target: 1000 }
-    ]
-  },
-  {
-    id: '3',
-    title: 'Optimize Operation Costs',
-    description: 'Reduce operational costs while maintaining service quality',
-    progress: 90,
-    status: 'on-track',
-    dueDate: '2024-04-30',
-    keyResults: [
-      { id: 'kr5', title: 'Reduce cloud infrastructure costs', current: 18, target: 20 },
-      { id: 'kr6', title: 'Automate manual processes', current: 85, target: 90 }
-    ]
-  },
+    level: 'department',
+    kpiIds: ['3'],
+    linkedKPIs: [
+      {
+        id: '3',
+        name: 'Development Progress',
+        value: 70,
+        target: 100,
+        unit: '%',
+        progress: 70,
+        trend: 'up',
+        status: 'on-track',
+        category: 'Development',
+        startDate: '2024-01-01',
+        dueDate: '2024-05-15',
+        lastUpdated: '2024-03-15',
+        history: [],
+        objectiveIds: ['2']
+      }
+    ],
+    contributors: [],
+    createdAt: '2024-01-01',
+    updatedAt: '2024-03-15'
+  }
 ];
 
 export default function ObjectivesList() {
@@ -70,6 +117,30 @@ export default function ObjectivesList() {
     setEditingObjective(null);
   };
 
+  const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
+    switch (trend) {
+      case 'up':
+        return <TrendingUp className="h-4 w-4 text-green-500" />;
+      case 'down':
+        return <TrendingDown className="h-4 w-4 text-red-500" />;
+      default:
+        return <Minus className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'on-track':
+        return 'bg-green-100 text-green-800';
+      case 'at-risk':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'behind':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-6">
@@ -84,7 +155,7 @@ export default function ObjectivesList() {
                 progress: 0,
                 status: 'on-track',
                 dueDate: '',
-                keyResults: []
+                kpiIds: []
               });
               setIsEditing(true);
             }}
@@ -187,7 +258,11 @@ export default function ObjectivesList() {
             >
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-4">
-                  <StatusDot status={objective.status} />
+                  <div className={`w-3 h-3 rounded-full ${
+                    objective.status === 'on-track' ? 'bg-green-500' :
+                    objective.status === 'at-risk' ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`} />
                   <div>
                     <h3 className="text-sm font-medium text-gray-900">
                       {objective.title}
@@ -231,25 +306,40 @@ export default function ObjectivesList() {
               {selectedObjective === objective.id && (
                 <div className="px-4 pb-4">
                   <p className="text-sm text-gray-600 mb-4">{objective.description}</p>
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-900">Key Results</h4>
-                    {objective.keyResults.map((kr) => (
-                      <div key={kr.id} className="bg-gray-50 p-3 rounded-md">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-gray-700">{kr.title}</span>
-                          <span className="text-sm text-gray-500">
-                            {kr.current} / {kr.target}
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-200 rounded-full">
-                          <div
-                            className="h-2 bg-green-500 rounded-full"
-                            style={{ width: `${(kr.current / kr.target) * 100}%` }}
-                          />
-                        </div>
+                  
+                  {/* Linked KPIs Section */}
+                  {objective.linkedKPIs && objective.linkedKPIs.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-900">Linked KPIs</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {objective.linkedKPIs.map((kpi) => (
+                          <div key={kpi.id} className="bg-gray-50 p-3 rounded-md">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <span className="text-sm font-medium text-gray-700">{kpi.name}</span>
+                                <p className="text-xs text-gray-500">{kpi.category}</p>
+                              </div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(kpi.status)}`}>
+                                {kpi.status.replace('-', ' ')}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">
+                                {kpi.value} / {kpi.target} {kpi.unit}
+                              </span>
+                              {getTrendIcon(kpi.trend)}
+                            </div>
+                            <div className="w-full h-1.5 bg-gray-200 rounded-full">
+                              <div
+                                className="h-1.5 bg-indigo-600 rounded-full"
+                                style={{ width: `${kpi.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -258,14 +348,4 @@ export default function ObjectivesList() {
       </div>
     </div>
   );
-}
-
-function StatusDot({ status }: { status: string }) {
-  const colors = {
-    'on-track': 'text-green-500',
-    'at-risk': 'text-yellow-500',
-    'behind': 'text-red-500',
-  };
-
-  return <Circle className={`h-3 w-3 ${colors[status as keyof typeof colors]} fill-current`} />;
 }

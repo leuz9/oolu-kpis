@@ -40,7 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Get user data from Firestore
           const userData = await userService.getUser(firebaseUser.uid);
           setUser(userData);
         } catch (error) {
@@ -59,15 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Update last login timestamp
       await userService.updateLastLogin(result.user.uid);
-
-      // Force token refresh
-      await result.user.getIdToken(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      throw error;
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        throw new Error('Invalid email or password');
+      }
+      throw new Error('Failed to login. Please try again.');
     }
   };
 
@@ -75,29 +72,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update Firebase Auth profile
       await updateProfile(result.user, {
         displayName: displayName
       });
 
-      // Create user document in Firestore
       await userService.createUser(result.user.uid, {
         email,
         displayName
       });
-
-      // Force token refresh
-      await result.user.getIdToken(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      throw error;
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('Email already in use');
+      }
+      throw new Error('Failed to create account. Please try again.');
     }
   };
 
   const logout = async () => {
     try {
       if (user) {
-        // Update last seen timestamp before logging out
         await userService.updateUser(user.id, {
           lastSeen: new Date().toISOString()
         });
@@ -105,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signOut(auth);
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
+      throw new Error('Failed to logout. Please try again.');
     }
   };
 
@@ -114,11 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await userService.updateUser(user.id, data);
-
-      // Update local user state
       setUser(prev => prev ? { ...prev, ...data } : null);
 
-      // Update Firebase Auth profile if necessary
       if (data.displayName || data.photoURL) {
         await updateProfile(auth.currentUser as FirebaseUser, {
           displayName: data.displayName,
@@ -127,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Profile update error:', error);
-      throw error;
+      throw new Error('Failed to update profile. Please try again.');
     }
   };
 

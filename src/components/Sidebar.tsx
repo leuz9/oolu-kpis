@@ -21,7 +21,9 @@ import {
   Database,
   UserCog,
   Book,
-  Link2
+  Link2,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -40,7 +42,7 @@ interface MenuItem {
 export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const menuItems: MenuItem[] = [
     // Main Menu
@@ -62,11 +64,20 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     { icon: <MessageSquare />, label: 'Messages', path: '/messages' },
     { icon: <Link2 />, label: 'Integrations', path: '/integrations', adminOnly: true },
     { icon: <Database />, label: 'API', path: '/api', adminOnly: true },
-    { icon: <FileCode />, label: 'Support', path: '/support', adminOnly: true },
+    { icon: <FileCode />, label: 'Support', path: '/support' }
   ];
 
   const handleNavigation = (path: string) => {
     navigate(path);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
   };
 
   const filteredMenuItems = menuItems.filter(item => !item.adminOnly || user?.isAdmin);
@@ -116,24 +127,62 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
             </div>
           ))}
         </div>
-
-        <div className="mt-4 pt-4 border-t border-gray-800">
-          <div
-            onClick={() => handleNavigation('/settings')}
-            className={`
-              flex items-center px-4 py-3 cursor-pointer
-              ${location.pathname === '/settings' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
-              ${sidebarOpen ? 'justify-start' : 'justify-center'}
-              transition-all duration-200
-            `}
-          >
-            <div className={`${sidebarOpen ? '' : 'w-6'} flex items-center`}>
-              <Settings className={`h-5 w-5 ${location.pathname === '/settings' ? 'text-white' : 'text-current'}`} />
-            </div>
-            {sidebarOpen && <span className="ml-3 text-sm font-medium">Settings</span>}
-          </div>
-        </div>
       </nav>
+
+      {/* User Profile and Settings */}
+      <div className="border-t border-gray-800 p-4">
+        {user && (
+          <div className="space-y-2">
+            {/* Profile Link */}
+            <div
+              onClick={() => handleNavigation('/profile')}
+              className={`
+                flex items-center px-4 py-3 cursor-pointer
+                ${location.pathname === '/profile' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
+                rounded-lg transition-all duration-200
+              `}
+            >
+              <User className="h-5 w-5" />
+              {sidebarOpen && (
+                <div className="ml-3">
+                  <p className="text-sm font-medium truncate">
+                    {user.displayName || user.email}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {user.role}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Settings Link */}
+            <div
+              onClick={() => handleNavigation('/settings')}
+              className={`
+                flex items-center px-4 py-3 cursor-pointer
+                ${location.pathname === '/settings' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
+                rounded-lg transition-all duration-200
+              `}
+            >
+              <Settings className="h-5 w-5" />
+              {sidebarOpen && (
+                <span className="ml-3 text-sm font-medium">Settings</span>
+              )}
+            </div>
+
+            {/* Logout Button */}
+            <div
+              onClick={handleLogout}
+              className="flex items-center px-4 py-3 cursor-pointer text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-all duration-200"
+            >
+              <LogOut className="h-5 w-5" />
+              {sidebarOpen && (
+                <span className="ml-3 text-sm font-medium">Sign out</span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { Objective, KeyResult } from '../types';
 
@@ -22,6 +22,7 @@ export const objectiveService = {
     try {
       const docRef = await addDoc(collection(db, COLLECTION_NAME), {
         ...objective,
+        kpiIds: objective.kpiIds || [], // Ensure kpiIds is initialized
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -38,10 +39,43 @@ export const objectiveService = {
   async updateObjective(id: string, objective: Partial<Objective>) {
     try {
       const objectiveRef = doc(db, COLLECTION_NAME, id);
+      
+      // Get current objective data to check for KPI changes
+      const currentObjectiveDoc = await getDoc(objectiveRef);
+      const currentObjective = currentObjectiveDoc.data() as Objective;
+      
+      // Handle KPI changes if kpiIds is being updated
+      if (objective.kpiIds) {
+        const removedKpis = currentObjective.kpiIds?.filter(
+          kpiId => !objective.kpiIds?.includes(kpiId)
+        ) || [];
+        
+        const addedKpis = objective.kpiIds.filter(
+          kpiId => !currentObjective.kpiIds?.includes(kpiId)
+        );
+        
+        // Update removed KPIs
+        for (const kpiId of removedKpis) {
+          const kpiRef = doc(db, 'kpis', kpiId);
+          await updateDoc(kpiRef, {
+            objectiveIds: arrayRemove(id)
+          });
+        }
+        
+        // Update added KPIs
+        for (const kpiId of addedKpis) {
+          const kpiRef = doc(db, 'kpis', kpiId);
+          await updateDoc(kpiRef, {
+            objectiveIds: arrayUnion(id)
+          });
+        }
+      }
+
       await updateDoc(objectiveRef, {
         ...objective,
         updatedAt: new Date().toISOString()
       });
+      
       return {
         id,
         ...objective
@@ -55,8 +89,24 @@ export const objectiveService = {
   async archiveObjective(id: string) {
     try {
       const objectiveRef = doc(db, COLLECTION_NAME, id);
+      
+      // Get current objective data
+      const objectiveDoc = await getDoc(objectiveRef);
+      const objective = objectiveDoc.data() as Objective;
+      
+      // Remove objective reference from all linked KPIs
+      if (objective.kpiIds?.length) {
+        for (const kpiId of objective.kpiIds) {
+          const kpiRef = doc(db, 'kpis', kpiId);
+          await updateDoc(kpiRef, {
+            objectiveIds: arrayRemove(id)
+          });
+        }
+      }
+
       await updateDoc(objectiveRef, {
         status: 'archived',
+        kpiIds: [], // Clear KPI links when archiving
         updatedAt: new Date().toISOString()
       });
     } catch (error) {
@@ -65,44 +115,52 @@ export const objectiveService = {
     }
   },
 
-  async addKeyResult(objectiveId: string, keyResult: Omit<KeyResult, 'id'>) {
+  async linkKPI(objectiveId: string, kpiId: string) {
     try {
-      const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
-      const newKeyResult = {
-        id: `kr-${Date.now()}`,
-        ...keyResult,
-        createdAt: new Date().toISOString()
-      };
+      const batch = writeBatch(db);
       
-      await updateDoc(objectiveRef, {
-        keyResults: arrayUnion(newKeyResult),
+      // Update objective
+      const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
+      batch.update(objectiveRef, {
+        kpiIds: arrayUnion(kpiId),
         updatedAt: new Date().toISOString()
       });
       
-      return newKeyResult;
+      // Update KPI
+      const kpiRef = doc(db, 'kpis', kpiId);
+      batch.update(kpiRef, {
+        objectiveIds: arrayUnion(objectiveId),
+        updatedAt: new Date().toISOString()
+      });
+      
+      await batch.commit();
     } catch (error) {
-      console.error('Error adding key result:', error);
+      console.error('Error linking KPI to objective:', error);
       throw error;
     }
   },
 
-  async updateKeyResult(objectiveId: string, keyResult: KeyResult) {
+  async unlinkKPI(objectiveId: string, kpiId: string) {
     try {
+      const batch = writeBatch(db);
+      
+      // Update objective
       const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
-      const objective = (await getDoc(objectiveRef)).data() as Objective;
-      
-      const updatedKeyResults = objective.keyResults.map(kr =>
-        kr.id === keyResult.id ? keyResult : kr
-      );
-      
-      await updateDoc(objectiveRef, {
-        keyResults: updatedKeyResults,
+      batch.update(objectiveRef, {
+        kpiIds: arrayRemove(kpiId),
         updatedAt: new Date().toISOString()
       });
       
-      return keyResult;
+      // Update KPI
+      const kpiRef = doc(db, 'kpis', kpiId);
+      batch.update(kpiRef, {
+        objectiveIds: arrayRemove(objectiveId),
+        updatedAt: new Date().toISOString()
+      });
+      
+      await batch.commit();
     } catch (error) {
-      console.error('Error updating key result:', error);
+      console.error('Error unlinking KPI from objective:', error);
       throw error;
     }
   }
