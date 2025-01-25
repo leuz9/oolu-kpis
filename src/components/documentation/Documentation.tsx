@@ -19,7 +19,13 @@ import {
   Link2,
   HelpCircle,
   Calendar,
-  Building2
+  Building2,
+  Search,
+  ArrowRight,
+  ExternalLink,
+  Download,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 
 interface DocSection {
@@ -31,7 +37,17 @@ interface DocSection {
     sections: Array<{
       title: string;
       content: string;
+      subsections?: Array<{
+        title: string;
+        content: string;
+      }>;
     }>;
+    examples?: Array<{
+      title: string;
+      description: string;
+      code?: string;
+    }>;
+    relatedTopics?: string[];
   };
 }
 
@@ -41,17 +57,48 @@ const functionalDocs: DocSection[] = [
     title: 'Getting Started',
     icon: <Book className="h-6 w-6" />,
     content: {
-      overview: 'Welcome to OKRFlow! This guide will help you get started with the platform.',
+      overview: 'Welcome to OKRFlow! This comprehensive guide will help you get started with managing your organization\'s objectives and key results effectively.',
       sections: [
         {
           title: 'Platform Overview',
-          content: 'OKRFlow is a comprehensive platform for managing Objectives and Key Results (OKRs), team performance, and project tracking. The platform integrates OKR management, KPI tracking, team collaboration, and project management in one unified solution.'
+          content: 'OKRFlow is a comprehensive platform for managing Objectives and Key Results (OKRs), team performance, and project tracking. The platform integrates OKR management, KPI tracking, team collaboration, and project management in one unified solution.',
+          subsections: [
+            {
+              title: 'Key Features',
+              content: '• Objective Hierarchy Management\n• KPI Tracking and Analytics\n• Team Collaboration Tools\n• Real-time Progress Updates\n• Performance Dashboards'
+            },
+            {
+              title: 'Benefits',
+              content: '• Improved Goal Alignment\n• Enhanced Transparency\n• Better Performance Tracking\n• Increased Accountability\n• Data-Driven Decision Making'
+            }
+          ]
         },
         {
           title: 'First Steps',
-          content: 'After logging in, you\'ll be greeted with the dashboard showing key metrics and recent activities. The sidebar contains all main features: Objectives, KPIs, Team, Projects, and Settings.'
+          content: 'After logging in, you\'ll be greeted with your personalized dashboard showing key metrics and recent activities. The sidebar contains all main features: Objectives, KPIs, Team, Projects, and Settings.',
+          subsections: [
+            {
+              title: 'Quick Setup Guide',
+              content: '1. Set up your profile\n2. Create your first objective\n3. Add key results\n4. Invite team members\n5. Start tracking progress'
+            }
+          ]
         }
-      ]
+      ],
+      examples: [
+        {
+          title: 'Creating Your First Objective',
+          description: 'Learn how to create and track your first objective',
+          code: `1. Click "New Objective" button
+2. Fill in objective details:
+   - Title
+   - Description
+   - Timeline
+   - Key Results
+3. Assign team members
+4. Set tracking metrics`
+        }
+      ],
+      relatedTopics: ['objectives', 'kpis', 'team-management']
     }
   },
   {
@@ -59,17 +106,63 @@ const functionalDocs: DocSection[] = [
     title: 'Objectives Management',
     icon: <Target className="h-6 w-6" />,
     content: {
-      overview: 'Learn how to create and manage objectives and key results.',
+      overview: 'Learn how to create, manage, and track objectives effectively across your organization.',
       sections: [
         {
-          title: 'Creating Objectives',
-          content: 'Objectives can be created at company, department, or individual levels. Each objective should be specific, measurable, and time-bound. You can add multiple key results to track progress.'
+          title: 'Objective Hierarchy',
+          content: 'OKRFlow supports a three-level objective hierarchy: Company, Department, and Individual objectives. This structure ensures proper alignment and cascading of goals throughout the organization.',
+          subsections: [
+            {
+              title: 'Company Objectives',
+              content: 'Top-level strategic goals that define organizational direction'
+            },
+            {
+              title: 'Department Objectives',
+              content: 'Tactical objectives that support company goals'
+            },
+            {
+              title: 'Individual Objectives',
+              content: 'Personal objectives aligned with department and company goals'
+            }
+          ]
         },
         {
-          title: 'Tracking Progress',
-          content: 'Progress is automatically calculated based on key results achievement. Regular check-ins help keep objectives on track and visible to all stakeholders.'
+          title: 'Creating Objectives',
+          content: 'Create objectives at any level with clear descriptions, timelines, and measurable key results. Link objectives to relevant KPIs and assign team members for better tracking and accountability.',
+          subsections: [
+            {
+              title: 'Best Practices',
+              content: '• Make objectives specific and measurable\n• Set realistic timelines\n• Align with higher-level objectives\n• Assign clear ownership\n• Link relevant KPIs'
+            }
+          ]
+        },
+        {
+          title: 'Progress Tracking',
+          content: 'Monitor objective progress through key results, linked KPIs, and regular check-ins. The system automatically calculates progress based on completion of key results and KPI achievements.',
+          subsections: [
+            {
+              title: 'Progress Calculation',
+              content: 'Progress is calculated using:\n• Key Result completion\n• KPI achievement\n• Manual updates\n• Child objective progress'
+            }
+          ]
         }
-      ]
+      ],
+      examples: [
+        {
+          title: 'Example Company Objective',
+          description: 'Increase Market Share',
+          code: `Objective: Increase market share by 15%
+Key Results:
+1. Acquire 1000 new customers
+2. Increase customer retention to 95%
+3. Launch in 2 new markets
+KPIs:
+- Customer Acquisition Rate
+- Customer Retention Rate
+- Market Penetration Rate`
+        }
+      ],
+      relatedTopics: ['kpis', 'team-management', 'progress-tracking']
     }
   },
   {
@@ -77,125 +170,45 @@ const functionalDocs: DocSection[] = [
     title: 'KPI Dashboard',
     icon: <PieChart className="h-6 w-6" />,
     content: {
-      overview: 'Monitor and manage Key Performance Indicators across your organization.',
+      overview: 'Monitor and manage Key Performance Indicators across your organization with real-time tracking and analytics.',
       sections: [
         {
-          title: 'KPI Creation',
-          content: 'Create KPIs with specific targets, measurement frequencies, and ownership. KPIs can be linked to objectives and departments.'
+          title: 'KPI Management',
+          content: 'Create, track, and analyze KPIs with specific targets, measurement frequencies, and ownership assignments.',
+          subsections: [
+            {
+              title: 'KPI Types',
+              content: '• Financial KPIs\n• Customer KPIs\n• Process KPIs\n• People KPIs'
+            },
+            {
+              title: 'Measurement Frequencies',
+              content: '• Daily\n• Weekly\n• Monthly\n• Quarterly'
+            }
+          ]
         },
         {
           title: 'Performance Tracking',
-          content: 'Track KPI performance over time with historical data, trends, and automated alerts for deviations from targets.'
+          content: 'Track KPI performance over time with historical data, trends, and automated alerts for deviations from targets.',
+          subsections: [
+            {
+              title: 'Tracking Features',
+              content: '• Real-time updates\n• Trend analysis\n• Performance alerts\n• Historical comparisons'
+            }
+          ]
         }
-      ]
-    }
-  },
-  {
-    id: 'team',
-    title: 'Team Management',
-    icon: <Users className="h-6 w-6" />,
-    content: {
-      overview: 'Manage team members, roles, and responsibilities.',
-      sections: [
+      ],
+      examples: [
         {
-          title: 'Team Structure',
-          content: 'Organize team members by departments, assign roles and responsibilities, and manage reporting relationships.'
-        },
-        {
-          title: 'Performance Management',
-          content: 'Track individual and team performance, conduct reviews, and align personal objectives with company goals.'
+          title: 'Setting Up a KPI',
+          description: 'Example of creating a customer satisfaction KPI',
+          code: `KPI: Customer Satisfaction Score
+Target: 90%
+Frequency: Monthly
+Measurement: Survey Results
+Alert Threshold: <80%`
         }
-      ]
-    }
-  },
-  {
-    id: 'projects',
-    title: 'Project Management',
-    icon: <Briefcase className="h-6 w-6" />,
-    content: {
-      overview: 'Create and manage projects aligned with objectives.',
-      sections: [
-        {
-          title: 'Project Creation',
-          content: 'Set up projects with clear goals, timelines, and resource allocation. Link projects to strategic objectives and assign team members.'
-        },
-        {
-          title: 'Progress Tracking',
-          content: 'Monitor project progress, manage tasks, and track milestones. Generate reports and identify potential risks early.'
-        }
-      ]
-    }
-  },
-  {
-    id: 'departments',
-    title: 'Department Management',
-    icon: <Building2 className="h-6 w-6" />,
-    content: {
-      overview: 'Manage organizational departments and their operations.',
-      sections: [
-        {
-          title: 'Department Structure',
-          content: 'Create and manage departments, assign managers, and define team structures. Track department-specific KPIs and objectives.'
-        },
-        {
-          title: 'Resource Management',
-          content: 'Manage department budgets, headcount, and resource allocation. Monitor department performance and efficiency metrics.'
-        }
-      ]
-    }
-  },
-  {
-    id: 'planning',
-    title: 'Planning & Scheduling',
-    icon: <Calendar className="h-6 w-6" />,
-    content: {
-      overview: 'Plan and schedule organizational activities and resources.',
-      sections: [
-        {
-          title: 'Event Management',
-          content: 'Schedule meetings, deadlines, and milestones. Manage team calendars and resource availability.'
-        },
-        {
-          title: 'Resource Planning',
-          content: 'Allocate resources efficiently, manage room bookings, and track equipment usage.'
-        }
-      ]
-    }
-  },
-  {
-    id: 'messaging',
-    title: 'Team Communication',
-    icon: <MessageSquare className="h-6 w-6" />,
-    content: {
-      overview: 'Internal communication and collaboration tools.',
-      sections: [
-        {
-          title: 'Channels & Direct Messages',
-          content: 'Create topic-based channels or direct message conversations. Share files and collaborate in real-time.'
-        },
-        {
-          title: 'Notifications',
-          content: 'Configure message notifications and stay updated on important conversations and mentions.'
-        }
-      ]
-    }
-  },
-  {
-    id: 'support',
-    title: 'Support System',
-    icon: <HelpCircle className="h-6 w-6" />,
-    content: {
-      overview: 'Access help and support resources.',
-      sections: [
-        {
-          title: 'Knowledge Base',
-          content: 'Browse through documentation, guides, and FAQs. Rate articles and provide feedback.'
-        },
-        {
-          title: 'Support Tickets',
-          content: 'Create and track support tickets. Get assistance from our support team through various channels.'
-        }
-      ]
+      ],
+      relatedTopics: ['objectives', 'analytics', 'reporting']
     }
   }
 ];
@@ -206,125 +219,46 @@ const technicalDocs: DocSection[] = [
     title: 'System Architecture',
     icon: <Layers className="h-6 w-6" />,
     content: {
-      overview: 'Technical overview of the platform architecture.',
+      overview: 'Technical overview of the OKRFlow platform architecture and components.',
       sections: [
         {
           title: 'Frontend Architecture',
-          content: 'Built with React and TypeScript, using Vite as the build tool. The UI is styled with Tailwind CSS and follows a component-based architecture with proper state management.'
+          content: 'Built with React and TypeScript, using Vite as the build tool. The UI is styled with Tailwind CSS and follows a component-based architecture with proper state management.',
+          subsections: [
+            {
+              title: 'Key Technologies',
+              content: '• React 18\n• TypeScript\n• Vite\n• Tailwind CSS\n• Lucide Icons'
+            },
+            {
+              title: 'State Management',
+              content: '• React Context for global state\n• Local state with hooks\n• Real-time updates'
+            }
+          ]
         },
         {
           title: 'Backend Services',
-          content: 'Firebase provides the backend infrastructure, including authentication, real-time database, and cloud functions for business logic.'
+          content: 'Firebase provides the backend infrastructure, including authentication, real-time database, and cloud functions for business logic.',
+          subsections: [
+            {
+              title: 'Firebase Services',
+              content: '• Authentication\n• Firestore Database\n• Cloud Functions\n• Storage\n• Analytics'
+            }
+          ]
         }
-      ]
-    }
-  },
-  {
-    id: 'authentication',
-    title: 'Authentication & Security',
-    icon: <Shield className="h-6 w-6" />,
-    content: {
-      overview: 'Security implementation details and authentication flow.',
-      sections: [
+      ],
+      examples: [
         {
-          title: 'Authentication Flow',
-          content: 'Firebase Authentication handles user authentication with email/password and role-based access control (RBAC).'
-        },
-        {
-          title: 'Security Rules',
-          content: 'Firestore security rules enforce data access control and validation at the database level.'
+          title: 'Data Flow Example',
+          description: 'How data flows through the system',
+          code: `User Action → React Component
+→ Service Layer
+→ Firebase SDK
+→ Cloud Functions
+→ Firestore
+→ Real-time Updates`
         }
-      ]
-    }
-  },
-  {
-    id: 'database',
-    title: 'Database Structure',
-    icon: <Database className="h-6 w-6" />,
-    content: {
-      overview: 'Database schema and data relationships.',
-      sections: [
-        {
-          title: 'Collections',
-          content: 'Main collections include users, objectives, kpis, projects, team_members, messages, and departments. Each collection follows a specific schema with proper indexing.'
-        },
-        {
-          title: 'Data Relationships',
-          content: 'Documents are linked using references, maintaining data integrity and enabling efficient queries.'
-        }
-      ]
-    }
-  },
-  {
-    id: 'api',
-    title: 'API Documentation',
-    icon: <Code className="h-6 w-6" />,
-    content: {
-      overview: 'API endpoints and integration details.',
-      sections: [
-        {
-          title: 'API Management',
-          content: 'Comprehensive API key management system with environment-specific keys, usage tracking, and access control.'
-        },
-        {
-          title: 'Endpoints',
-          content: 'RESTful API endpoints for all major functionalities including objectives, KPIs, team management, and messaging.'
-        }
-      ]
-    }
-  },
-  {
-    id: 'integrations',
-    title: 'External Integrations',
-    icon: <Link2 className="h-6 w-6" />,
-    content: {
-      overview: 'Integration capabilities and third-party services.',
-      sections: [
-        {
-          title: 'Available Integrations',
-          content: 'Support for various external services including databases, authentication providers, analytics tools, and storage solutions.'
-        },
-        {
-          title: 'Integration Management',
-          content: 'Tools for managing integration configurations, monitoring performance, and troubleshooting connection issues.'
-        }
-      ]
-    }
-  },
-  {
-    id: 'deployment',
-    title: 'Deployment',
-    icon: <Server className="h-6 w-6" />,
-    content: {
-      overview: 'Deployment process and environment configuration.',
-      sections: [
-        {
-          title: 'Build Process',
-          content: 'Vite handles the build process, optimizing assets and generating production-ready code.'
-        },
-        {
-          title: 'Environment Setup',
-          content: 'Environment variables control configuration for different deployment environments (development, staging, production).'
-        }
-      ]
-    }
-  },
-  {
-    id: 'version-control',
-    title: 'Version Control',
-    icon: <GitBranch className="h-6 w-6" />,
-    content: {
-      overview: 'Version control and release management.',
-      sections: [
-        {
-          title: 'Branching Strategy',
-          content: 'The project follows a Git Flow branching strategy with feature branches, development, and main branches.'
-        },
-        {
-          title: 'Release Process',
-          content: 'Releases are tagged and documented with changelogs, following semantic versioning.'
-        }
-      ]
+      ],
+      relatedTopics: ['security', 'api', 'performance']
     }
   }
 ];
@@ -333,6 +267,49 @@ export default function Documentation() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'functional' | 'technical'>('functional');
   const [selectedDoc, setSelectedDoc] = useState<DocSection>(functionalDocs[0]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [helpfulDocs, setHelpfulDocs] = useState<Set<string>>(new Set());
+  const [unhelpfulDocs, setUnhelpfulDocs] = useState<Set<string>>(new Set());
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (!term) {
+      setSelectedDoc(activeTab === 'functional' ? functionalDocs[0] : technicalDocs[0]);
+      return;
+    }
+
+    const docs = activeTab === 'functional' ? functionalDocs : technicalDocs;
+    const matchingDoc = docs.find(doc => 
+      doc.title.toLowerCase().includes(term.toLowerCase()) ||
+      doc.content.overview.toLowerCase().includes(term.toLowerCase()) ||
+      doc.content.sections.some(section => 
+        section.title.toLowerCase().includes(term.toLowerCase()) ||
+        section.content.toLowerCase().includes(term.toLowerCase())
+      )
+    );
+
+    if (matchingDoc) {
+      setSelectedDoc(matchingDoc);
+    }
+  };
+
+  const handleFeedback = (docId: string, helpful: boolean) => {
+    if (helpful) {
+      setHelpfulDocs(prev => new Set(prev).add(docId));
+      setUnhelpfulDocs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(docId);
+        return newSet;
+      });
+    } else {
+      setUnhelpfulDocs(prev => new Set(prev).add(docId));
+      setHelpfulDocs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(docId);
+        return newSet;
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -346,6 +323,25 @@ export default function Documentation() {
               <p className="mt-1 text-sm text-gray-500">
                 Platform documentation and technical guides
               </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search documentation..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              </div>
+              <a
+                href="#"
+                className="flex items-center text-primary-600 hover:text-primary-700"
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Download PDF
+              </a>
             </div>
           </div>
 
@@ -361,7 +357,7 @@ export default function Documentation() {
             >
               <div className="flex items-center">
                 <FileText className="h-5 w-5 mr-2" />
-                Functional Documentation
+                User Guide
               </div>
             </button>
             <button
@@ -374,7 +370,7 @@ export default function Documentation() {
             >
               <div className="flex items-center">
                 <Code className="h-5 w-5 mr-2" />
-                Technical Documentation
+                Technical Guide
               </div>
             </button>
           </div>
@@ -416,21 +412,109 @@ export default function Documentation() {
                 </div>
 
                 <div className="prose max-w-none">
-                  <p className="text-gray-600 mb-8">
-                    {selectedDoc.content.overview}
-                  </p>
+                  <div className="bg-gray-50 border-l-4 border-primary-500 p-4 rounded mb-8">
+                    <p className="text-gray-600">
+                      {selectedDoc.content.overview}
+                    </p>
+                  </div>
 
                   <div className="space-y-8">
                     {selectedDoc.content.sections.map((section, index) => (
                       <div key={index}>
-                        <h3 className="text-lg font-medium text-gray-900 mb-3">
+                        <h3 className="text-xl font-medium text-gray-900 mb-4">
                           {section.title}
                         </h3>
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 mb-4">
                           {section.content}
                         </p>
+                        {section.subsections && (
+                          <div className="ml-6 space-y-4 mt-4">
+                            {section.subsections.map((subsection, subIndex) => (
+                              <div key={subIndex}>
+                                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                                  {subsection.title}
+                                </h4>
+                                <p className="text-gray-600 whitespace-pre-line">
+                                  {subsection.content}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
+
+                    {selectedDoc.content.examples && (
+                      <div className="mt-8">
+                        <h3 className="text-xl font-medium text-gray-900 mb-4">
+                          Examples
+                        </h3>
+                        <div className="space-y-6">
+                          {selectedDoc.content.examples.map((example, index) => (
+                            <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                              <h4 className="text-lg font-medium text-gray-900 mb-2">
+                                {example.title}
+                              </h4>
+                              <p className="text-gray-600 mb-4">{example.description}</p>
+                              {example.code && (
+                                <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                                  <code>{example.code}</code>
+                                </pre>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedDoc.content.relatedTopics && (
+                      <div className="mt-8 pt-8 border-t border-gray-200">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          Related Topics
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedDoc.content.relatedTopics.map((topic, index) => (
+                            <a
+                              key={index}
+                              href={`#${topic}`}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800 hover:bg-gray-200"
+                            >
+                              {topic}
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Feedback Section */}
+                  <div className="mt-12 pt-8 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-900 mb-4">Was this documentation helpful?</h4>
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => handleFeedback(selectedDoc.id, true)}
+                        className={`flex items-center px-4 py-2 rounded-md text-sm ${
+                          helpfulDocs.has(selectedDoc.id)
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <ThumbsUp className="h-4 w-4 mr-2" />
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(selectedDoc.id, false)}
+                        className={`flex items-center px-4 py-2 rounded-md text-sm ${
+                          unhelpfulDocs.has(selectedDoc.id)
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <ThumbsDown className="h-4 w-4 mr-2" />
+                        No
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

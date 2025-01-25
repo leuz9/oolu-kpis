@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Calendar, Building2, User, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
+import { Target, Calendar, Building2, Users, TrendingUp, TrendingDown, Minus, AlertTriangle, Plus } from 'lucide-react';
 import FormHeader from './FormHeader';
 import ErrorAlert from './ErrorAlert';
 import BasicInformation from './BasicInformation';
@@ -9,9 +9,11 @@ import DateInputs from './DateInputs';
 import StatusPreview from './StatusPreview';
 import FormActions from './FormActions';
 import ParentObjectiveSelect from './ParentObjectiveSelect';
+import Contributors from './Contributors';
 import { calculateTrend, calculateStatus } from './utils';
 import { objectiveService } from '../../../../services/objectiveService';
-import type { KPI, Objective } from '../../../../types';
+import { userService } from '../../../../services/userService';
+import type { KPI, Objective, User } from '../../../../types';
 
 interface KPIFormProps {
   onClose: () => void;
@@ -35,31 +37,42 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
     history: [],
     objectiveIds: [],
     owner: '',
-    department: ''
+    department: '',
+    contributors: []
   });
 
   const [customUnit, setCustomUnit] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loadingObjectives, setLoadingObjectives] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
-    const fetchObjectives = async () => {
+    const fetchData = async () => {
       try {
         setLoadingObjectives(true);
-        const fetchedObjectives = await objectiveService.getObjectives();
+        setLoadingUsers(true);
+        
+        const [fetchedObjectives, fetchedUsers] = await Promise.all([
+          objectiveService.getObjectives(),
+          userService.getAllUsers()
+        ]);
+        
         setObjectives(fetchedObjectives);
+        setUsers(fetchedUsers);
       } catch (err) {
-        console.error('Error fetching objectives:', err);
-        setError('Failed to load objectives');
+        console.error('Error fetching data:', err);
+        setError('Failed to load data');
       } finally {
         setLoadingObjectives(false);
+        setLoadingUsers(false);
       }
     };
 
-    fetchObjectives();
+    fetchData();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,6 +140,18 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
     });
   };
 
+  const handleContributorSelect = (userId: string) => {
+    const contributors = formData.contributors || [];
+    const newContributors = contributors.includes(userId)
+      ? contributors.filter(id => id !== userId)
+      : [...contributors, userId];
+    
+    setFormData({
+      ...formData,
+      contributors: newContributors
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -180,6 +205,20 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
                 });
               }}
               loading={loadingObjectives}
+            />
+          </div>
+
+          {/* Contributors Section */}
+          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+            <h3 className="text-sm font-medium text-gray-900 flex items-center">
+              <Users className="h-4 w-4 mr-2 text-primary-600" />
+              Contributors
+            </h3>
+            <Contributors
+              contributors={formData.contributors || []}
+              users={users}
+              loading={loadingUsers}
+              onSelect={handleContributorSelect}
             />
           </div>
 

@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../Sidebar';
 import { kpiService } from '../../services/kpiService';
-import { Plus, TrendingUp, TrendingDown, Minus, Pencil, Trash2, X } from 'lucide-react';
+import { 
+  Plus, 
+  TrendingUp, 
+  TrendingDown, 
+  Minus, 
+  Pencil, 
+  Trash2, 
+  X,
+  LayoutGrid,
+  List,
+  Search,
+  Filter,
+  AlertTriangle,
+  CheckCircle2
+} from 'lucide-react';
 import KPIForm from './components/KPIForm';
+import KPICard from './components/KPICard';
+import KPIListItem from './components/KPIListItem';
 import type { KPI } from '../../types';
 
 export default function KPIs() {
@@ -12,6 +28,10 @@ export default function KPIs() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingKpi, setEditingKpi] = useState<KPI | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     fetchKPIs();
@@ -68,29 +88,15 @@ export default function KPIs() {
     }
   };
 
-  const getStatusColor = (status: KPI['status']) => {
-    switch (status) {
-      case 'on-track':
-        return 'bg-green-100 text-green-800';
-      case 'at-risk':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'behind':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const filteredKpis = kpis.filter(kpi => {
+    const matchesSearch = kpi.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         kpi.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || kpi.category === filterCategory;
+    const matchesStatus = filterStatus === 'all' || kpi.status === filterStatus;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
-  const getTrendIcon = (trend: KPI['trend']) => {
-    switch (trend) {
-      case 'up':
-        return <TrendingUp className="h-5 w-5 text-green-500" />;
-      case 'down':
-        return <TrendingDown className="h-5 w-5 text-red-500" />;
-      default:
-        return <Minus className="h-5 w-5 text-gray-500" />;
-    }
-  };
+  const categories = Array.from(new Set(kpis.map(kpi => kpi.category)));
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -105,19 +111,43 @@ export default function KPIs() {
                 Track and manage your organization's KPIs
               </p>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Add KPI
-            </button>
+            <div className="flex items-center space-x-4">
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-l-md ${
+                    viewMode === 'grid'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  } border border-gray-300`}
+                >
+                  <LayoutGrid className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-r-md ${
+                    viewMode === 'list'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  } border border-l-0 border-gray-300`}
+                >
+                  <List className="h-5 w-5" />
+                </button>
+              </div>
+              <button
+                onClick={() => setShowForm(true)}
+                className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add KPI
+              </button>
+            </div>
           </div>
 
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
               <div className="flex">
-                <X className="h-5 w-5 text-red-400" />
+                <AlertTriangle className="h-5 w-5 text-red-400" />
                 <div className="ml-3">
                   <p className="text-sm text-red-700">{error}</p>
                 </div>
@@ -125,72 +155,98 @@ export default function KPIs() {
             </div>
           )}
 
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search KPIs..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="block rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="block rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="on-track">On Track</option>
+                  <option value="at-risk">At Risk</option>
+                  <option value="behind">Behind</option>
+                </select>
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span>{filteredKpis.length} KPIs</span>
+              </div>
+            </div>
+          </div>
+
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {kpis.map((kpi) => (
-                <div
+              {filteredKpis.map((kpi) => (
+                <KPICard
                   key={kpi.id}
-                  className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">{kpi.name}</h3>
-                      <p className="text-sm text-gray-500">{kpi.category}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setEditingKpi(kpi)}
-                        className="p-1 text-gray-400 hover:text-primary-600"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteKpi(kpi.id)}
-                        className="p-1 text-gray-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-2xl font-semibold text-gray-900">
-                      {kpi.value} {kpi.unit}
-                    </div>
-                    {getTrendIcon(kpi.trend)}
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm text-gray-500 mb-1">
-                      <span>Progress</span>
-                      <span>{kpi.progress}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-200 rounded-full">
-                      <div
-                        className="h-2 bg-primary-600 rounded-full transition-all duration-300"
-                        style={{ width: `${kpi.progress}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
-                      <span>Current: {kpi.value}</span>
-                      <span>Target: {kpi.target}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(kpi.status)}`}>
-                      {kpi.status.replace('-', ' ')}
-                    </span>
-                    <span className="text-gray-500">
-                      Updated {new Date(kpi.lastUpdated).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
+                  kpi={kpi}
+                  onEdit={() => setEditingKpi(kpi)}
+                  onDelete={() => handleDeleteKpi(kpi.id)}
+                />
               ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Progress
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Last Updated
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredKpis.map((kpi) => (
+                    <KPIListItem
+                      key={kpi.id}
+                      kpi={kpi}
+                      onEdit={() => setEditingKpi(kpi)}
+                      onDelete={() => handleDeleteKpi(kpi.id)}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
