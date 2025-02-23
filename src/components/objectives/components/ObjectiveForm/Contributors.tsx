@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Users, Search } from 'lucide-react';
 import type { User } from '../../../../types';
 
 interface ContributorsProps {
@@ -10,17 +11,39 @@ interface ContributorsProps {
 }
 
 export default function Contributors({ level, contributors, users, loading, onSelect }: ContributorsProps) {
-  if (level === 'company') return null;
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => 
+    user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.department?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <label className="block text-sm font-medium text-gray-700">
-          {level === 'department' ? 'Department Members' : 'Assignee'}
+          {level === 'company' ? 'Company Contributors' :
+           level === 'department' ? 'Department Members' : 
+           'Assignee'}
         </label>
         <span className="text-sm text-gray-500">
           {contributors.length} selected
         </span>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search contributors..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+        <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
       </div>
 
       {loading ? (
@@ -28,8 +51,8 @@ export default function Contributors({ level, contributors, users, loading, onSe
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {users.map((user) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
+          {filteredUsers.map((user) => (
             <div
               key={user.id}
               className={`p-4 rounded-lg border ${
@@ -61,11 +84,18 @@ export default function Contributors({ level, contributors, users, loading, onSe
                   </p>
                   <p className="text-xs text-gray-500">
                     {user.role}
+                    {user.department && ` • ${user.department}`}
                   </p>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {filteredUsers.length === 0 && (
+        <div className="text-center py-4 text-gray-500">
+          No users found matching your search
         </div>
       )}
     </div>

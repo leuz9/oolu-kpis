@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
-import { Shield, UserX, AlertTriangle, CheckCircle2, Search } from 'lucide-react';
+import { Shield, UserX, AlertTriangle, CheckCircle2, Search, Edit } from 'lucide-react';
 import type { User } from '../../types';
+import UserEditModal from './UserEditModal';
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -10,6 +11,7 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -28,17 +30,18 @@ export default function UserManagement() {
     }
   };
 
-  const handleRoleChange = async (userId: string, role: string, isAdmin: boolean) => {
+  const handleEditUser = async (userId: string, data: Partial<User>) => {
     try {
-      await adminService.updateUserRole(userId, role, isAdmin);
+      await adminService.updateUser(userId, data);
       setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, role, isAdmin } : user
+        user.id === userId ? { ...user, ...data } : user
       ));
-      setSuccessMessage('User role updated successfully');
+      setSuccessMessage('User updated successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      setError('Failed to update user role. Please try again.');
-      console.error('Error updating user role:', err);
+      setError('Failed to update user. Please try again.');
+      console.error('Error updating user:', err);
+      throw err;
     }
   };
 
@@ -61,14 +64,6 @@ export default function UserManagement() {
     user.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.department?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white shadow-sm rounded-lg p-6">
@@ -106,7 +101,7 @@ export default function UserManagement() {
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
@@ -126,7 +121,10 @@ export default function UserManagement() {
                 Department
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Admin Status
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Last Activity
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -135,18 +133,18 @@ export default function UserManagement() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredUsers.map((user) => (
-              <tr key={user.id}>
+              <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
                       {user.photoURL ? (
                         <img
                           src={user.photoURL}
-                          alt={user.displayName}
+                          alt={user.displayName || ''}
                           className="h-10 w-10 rounded-full object-cover"
                         />
                       ) : (
-                        <span className="text-indigo-600 font-medium text-sm">
+                        <span className="text-primary-600 font-medium text-sm">
                           {user.displayName?.charAt(0) || user.email.charAt(0)}
                         </span>
                       )}
@@ -160,39 +158,51 @@ export default function UserManagement() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <select
-                    value={user.role || ''}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value, user.isAdmin || false)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  >
-                    <option value="">Select Role</option>
-                    <option value="User">User</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Director">Director</option>
-                    <option value="Administrator">Administrator</option>
-                  </select>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.department || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.department || 'Not assigned'}</div>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    user.status === 'active' ? 'bg-green-100 text-green-800' :
+                    user.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {user.status}
+                  </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={user.isAdmin || false}
-                      onChange={(e) => handleRoleChange(user.id, user.role || '', e.target.checked)}
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.lastLogin ? (
+                    <div className="flex flex-col">
+                      <span>Last login: {new Date(user.lastLogin).toLocaleDateString()}</span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(user.lastLogin).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  ) : (
+                    'Never'
+                  )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <button
-                    onClick={() => setShowDeleteConfirm(user.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <UserX className="h-5 w-5" />
-                  </button>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex items-center justify-end space-x-2">
+                    <button
+                      onClick={() => setEditingUser(user)}
+                      className="p-1 text-gray-400 hover:text-primary-600"
+                      title="Edit User"
+                    >
+                      <Edit className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(user.id)}
+                      className="p-1 text-gray-400 hover:text-red-600"
+                      title="Delete User"
+                    >
+                      <UserX className="h-5 w-5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -200,6 +210,7 @@ export default function UserManagement() {
         </table>
       </div>
 
+      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -223,6 +234,15 @@ export default function UserManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <UserEditModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={handleEditUser}
+        />
       )}
     </div>
   );

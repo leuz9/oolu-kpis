@@ -1,5 +1,14 @@
-import { collection, doc, getDocs, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { getAuth, updateUser, deleteUser } from 'firebase/auth';
+import { 
+  collection, 
+  doc, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  serverTimestamp 
+} from 'firebase/firestore';
+import { getAuth, deleteUser } from 'firebase/auth';
 import { db } from '../config/firebase';
 import type { User, Role } from '../types';
 
@@ -20,21 +29,26 @@ export const adminService = {
     }
   },
 
-  async updateUserRole(userId: string, role: string, isAdmin: boolean) {
+  async updateUser(userId: string, data: Partial<User>) {
     try {
       const userRef = doc(db, USERS_COLLECTION, userId);
-      await updateDoc(userRef, { 
-        role,
-        isAdmin
-      });
       
-      // Update custom claims in Firebase Auth
-      const auth = getAuth();
-      await auth.setCustomUserClaims(userId, { admin: isAdmin });
-      
-      return { role, isAdmin };
+      // Prepare update data
+      const updateData = {
+        ...data,
+        updatedAt: serverTimestamp()
+      };
+
+      // Remove sensitive fields that shouldn't be updated directly
+      delete updateData.id;
+      delete updateData.email;
+      delete updateData.createdAt;
+
+      await updateDoc(userRef, updateData);
+
+      return { id: userId, ...data };
     } catch (error) {
-      console.error('Error updating user role:', error);
+      console.error('Error updating user:', error);
       throw error;
     }
   },
@@ -46,7 +60,10 @@ export const adminService = {
       
       // Delete from Firebase Auth
       const auth = getAuth();
-      await auth.deleteUser(userId);
+      const user = auth.currentUser;
+      if (user && user.uid === userId) {
+        await deleteUser(user);
+      }
     } catch (error) {
       console.error('Error deleting user:', error);
       throw error;
@@ -58,7 +75,7 @@ export const adminService = {
       const roleRef = doc(db, ROLES_COLLECTION, roleId);
       await updateDoc(roleRef, {
         permissions: role.permissions,
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
 
       // Update all users with this role to have the new permissions
@@ -68,8 +85,7 @@ export const adminService = {
       const batch = db.batch();
       usersSnapshot.docs.forEach(userDoc => {
         batch.update(userDoc.ref, {
-          permissions: role.permissions,
-          'customClaims.permissions': role.permissions
+          permissions: role.permissions
         });
       });
       await batch.commit();

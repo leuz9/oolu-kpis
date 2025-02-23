@@ -7,7 +7,10 @@ interface ObjectiveHierarchyProps {
   onObjectiveSelect: (objective: Objective) => void;
 }
 
-export default function ObjectiveHierarchy({ objectives, onObjectiveSelect }: ObjectiveHierarchyProps) {
+export default function ObjectiveHierarchy({
+  objectives,
+  onObjectiveSelect
+}: ObjectiveHierarchyProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const toggleNode = (id: string) => {
@@ -20,33 +23,7 @@ export default function ObjectiveHierarchy({ objectives, onObjectiveSelect }: Ob
     setExpandedNodes(newExpanded);
   };
 
-  const getLevelIcon = (level: string) => {
-    switch (level) {
-      case 'company':
-        return <Target className="h-5 w-5 text-primary-600" />;
-      case 'department':
-        return <Building2 className="h-5 w-5 text-blue-600" />;
-      case 'individual':
-        return <User className="h-5 w-5 text-green-600" />;
-      default:
-        return <Target className="h-5 w-5 text-gray-400" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'on-track':
-        return 'bg-green-100 text-green-800';
-      case 'at-risk':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'behind':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Organize objectives by level and parent
+  // Organize objectives by level
   const companyObjectives = objectives.filter(obj => obj.level === 'company');
   
   const getChildObjectives = (parentId: string) => {
@@ -62,31 +39,35 @@ export default function ObjectiveHierarchy({ objectives, onObjectiveSelect }: Ob
       <div key={objective.id} className="select-none">
         <div 
           className={`
-            flex items-center p-3 hover:bg-gray-50 cursor-pointer rounded-lg
+            flex items-center p-2 hover:bg-gray-50 cursor-pointer
             ${level > 0 ? 'ml-6' : ''}
-            ${isExpanded ? 'bg-gray-50' : ''}
           `}
-          onClick={() => {
-            if (hasChildren) {
-              toggleNode(objective.id);
-            }
-            onObjectiveSelect(objective);
-          }}
+          onClick={() => onObjectiveSelect(objective)}
         >
           <div className="flex items-center flex-1">
             {hasChildren ? (
-              isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-gray-400 mr-2" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-400 mr-2" />
-              )
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleNode(objective.id);
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                )}
+              </button>
             ) : (
-              <div className="w-4 mr-2" />
+              <div className="w-6" />
             )}
             
-            {getLevelIcon(objective.level)}
+            {objective.level === 'company' && <Target className="h-4 w-4 text-primary-600 mr-2" />}
+            {objective.level === 'department' && <Building2 className="h-4 w-4 text-blue-600 mr-2" />}
+            {objective.level === 'individual' && <User className="h-4 w-4 text-green-600 mr-2" />}
             
-            <div className="ml-3 flex-1">
+            <div>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">{objective.title}</h3>
@@ -95,7 +76,11 @@ export default function ObjectiveHierarchy({ objectives, onObjectiveSelect }: Ob
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(objective.status)}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
+                    objective.status === 'on-track' ? 'bg-green-100 text-green-800' :
+                    objective.status === 'at-risk' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
                     {objective.status.replace('-', ' ')}
                   </span>
                   <div className="w-16">

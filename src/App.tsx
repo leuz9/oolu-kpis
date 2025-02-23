@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Dashboard from './components/Dashboard';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Profile from './components/profile/Profile';
 import Objectives from './components/objectives/Objectives';
-import KPIs from './components/kpis/KPIs';
+import KeyResults from './components/key-results/KeyResults';
 import Team from './components/team/Team';
 import Projects from './components/projects/Projects';
 import Settings from './components/settings/Settings';
@@ -55,9 +56,9 @@ function AppRoutes() {
             <Objectives />
           </PrivateRoute>
         } />
-        <Route path="/kpis" element={
+        <Route path="/key-results" element={
           <PrivateRoute>
-            <KPIs />
+            <KeyResults />
           </PrivateRoute>
         } />
         <Route path="/team" element={
@@ -143,9 +144,11 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <NotificationProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

@@ -1,49 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { KPI } from '../../../../types';
-import { kpiService } from '../../../../services/kpiService';
+import KPIUpdateModal from '../../../kpis/components/KPIUpdateModal';
 
 interface LinkedKPIsProps {
   linkedKPIs: KPI[];
   loading: boolean;
   error: string | null;
   onManageKPIs: () => void;
+  onUpdateKPI: (kpiId: string, value: number, comment: string) => Promise<void>;
 }
 
-export default function LinkedKPIs({ linkedKPIs, loading, error, onManageKPIs }: LinkedKPIsProps) {
-  const [updatingKPI, setUpdatingKPI] = useState<string | null>(null);
-  const [updateError, setUpdateError] = useState<string | null>(null);
-
-  const handleUpdateKPI = async (kpi: KPI) => {
-    try {
-      setUpdatingKPI(kpi.id);
-      setUpdateError(null);
-
-      const newValue = prompt(`Enter new value for ${kpi.name} (current: ${kpi.value}${kpi.unit}):`, kpi.value.toString());
-      if (newValue === null) return; // User cancelled
-
-      const value = parseFloat(newValue);
-      if (isNaN(value)) {
-        setUpdateError('Please enter a valid number');
-        return;
-      }
-
-      await kpiService.updateKPI(kpi.id, {
-        ...kpi,
-        value,
-        progress: Math.min(100, Math.round((value / kpi.target) * 100)),
-        trend: value > kpi.value ? 'up' : value < kpi.value ? 'down' : 'stable',
-        status: value >= kpi.target ? 'on-track' : value >= kpi.target * 0.7 ? 'at-risk' : 'behind',
-        lastUpdated: new Date().toISOString()
-      });
-
-    } catch (err) {
-      console.error('Error updating KPI:', err);
-      setUpdateError('Failed to update KPI value');
-    } finally {
-      setUpdatingKPI(null);
-    }
-  };
+export default function LinkedKPIs({ linkedKPIs, loading, error, onManageKPIs, onUpdateKPI }: LinkedKPIsProps) {
+  const [updatingKPI, setUpdatingKPI] = React.useState<KPI | null>(null);
 
   return (
     <div className="mb-6">
@@ -58,11 +27,11 @@ export default function LinkedKPIs({ linkedKPIs, loading, error, onManageKPIs }:
         </button>
       </div>
 
-      {(error || updateError) && (
+      {error && (
         <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
           <div className="flex">
             <AlertTriangle className="h-5 w-5 text-red-400" />
-            <p className="ml-3 text-sm text-red-700">{error || updateError}</p>
+            <p className="ml-3 text-sm text-red-700">{error}</p>
           </div>
         </div>
       )}
@@ -86,14 +55,11 @@ export default function LinkedKPIs({ linkedKPIs, loading, error, onManageKPIs }:
                   <p className="text-xs text-gray-500 mt-1">{kpi.category}</p>
                 </div>
                 <button
-                  onClick={() => handleUpdateKPI(kpi)}
-                  disabled={updatingKPI === kpi.id}
-                  className={`p-1.5 rounded-md text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors ${
-                    updatingKPI === kpi.id ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  onClick={() => setUpdatingKPI(kpi)}
+                  className="p-1.5 rounded-md text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                   title="Update KPI value"
                 >
-                  <RefreshCw className={`h-4 w-4 ${updatingKPI === kpi.id ? 'animate-spin' : ''}`} />
+                  <RefreshCw className="h-4 w-4" />
                 </button>
               </div>
               <div className="mt-2 flex items-center justify-between">
@@ -126,6 +92,14 @@ export default function LinkedKPIs({ linkedKPIs, loading, error, onManageKPIs }:
             </div>
           ))}
         </div>
+      )}
+
+      {updatingKPI && (
+        <KPIUpdateModal
+          kpi={updatingKPI}
+          onClose={() => setUpdatingKPI(null)}
+          onUpdate={onUpdateKPI}
+        />
       )}
     </div>
   );

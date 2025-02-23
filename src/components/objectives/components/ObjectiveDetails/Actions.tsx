@@ -3,12 +3,13 @@ import { Pencil, Archive, RefreshCw } from 'lucide-react';
 
 interface ActionsProps {
   onEdit: () => void;
-  onArchive: () => void;
+  onArchive?: () => void; // Rendu optionnel
   onUpdate: () => void;
   updating: boolean;
+  isAdmin: boolean; // Ajout de la prop isAdmin
 }
 
-export default function Actions({ onEdit, onArchive, onUpdate, updating }: ActionsProps) {
+export default function Actions({ onEdit, onArchive, onUpdate, updating, isAdmin }: ActionsProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-4">
@@ -30,13 +31,15 @@ export default function Actions({ onEdit, onArchive, onUpdate, updating }: Actio
           Update Progress
         </button>
       </div>
-      <button
-        onClick={onArchive}
-        className="px-4 py-2 bg-red-50 border border-red-300 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 flex items-center"
-      >
-        <Archive className="h-4 w-4 mr-2" />
-        Archive Objective
-      </button>
+      {isAdmin && onArchive && ( // N'affiche le bouton d'archivage que pour les admins
+        <button
+          onClick={onArchive}
+          className="px-4 py-2 bg-red-50 border border-red-300 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 flex items-center"
+        >
+          <Archive className="h-4 w-4 mr-2" />
+          Archive Objective
+        </button>
+      )}
     </div>
   );
 }

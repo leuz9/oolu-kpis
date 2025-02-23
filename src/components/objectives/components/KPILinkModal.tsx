@@ -83,19 +83,21 @@ export default function KPILinkModal({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">Link KPIs</h3>
-            <p className="text-sm text-gray-500 mt-1">Connect KPIs to track objective progress</p>
+      <div className="bg-white rounded-lg w-[80vw] h-[80vh] flex flex-col">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Link KPIs</h3>
+              <p className="text-sm text-gray-500 mt-1">Connect KPIs to track objective progress</p>
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+        <div className="p-6 border-b border-gray-200 bg-gray-50">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -148,8 +150,8 @@ export default function KPILinkModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+        <div className="flex-1 overflow-hidden p-6">
+          <div className="grid grid-cols-2 gap-6 h-full">
             {/* Linked KPIs */}
             <div className="flex flex-col">
               <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">

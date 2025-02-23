@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../Sidebar';
+import { supportService } from '../../services/supportService';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   HelpCircle,
   Book,
@@ -16,261 +18,87 @@ import {
   CheckCircle2,
   X,
   Plus,
-  Filter,
-  Clock,
-  Plus as PlusIcon,
-  Filter as FilterIcon
+  Filter
 } from 'lucide-react';
-
-interface Article {
-  id: string;
-  title: string;
-  category: string;
-  content: string;
-  helpful: number;
-  notHelpful: number;
-  lastUpdated: string;
-  tags: string[];
-}
-
-interface Ticket {
-  id: string;
-  subject: string;
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: string;
-  createdAt: string;
-  updatedAt: string;
-  assignee?: string;
-  description: string;
-}
-
-const sampleArticles: Article[] = [
-  {
-    id: '1',
-    title: 'Getting Started with OKRFlow',
-    category: 'Getting Started',
-    content: 'Learn how to set up and start using OKRFlow effectively...',
-    helpful: 145,
-    notHelpful: 12,
-    lastUpdated: '2024-03-15T10:30:00Z',
-    tags: ['setup', 'basics', 'introduction']
-  },
-  {
-    id: '2',
-    title: 'Managing Teams and Permissions',
-    category: 'Administration',
-    content: 'Comprehensive guide to team management and permission settings...',
-    helpful: 89,
-    notHelpful: 5,
-    lastUpdated: '2024-03-14T15:45:00Z',
-    tags: ['teams', 'permissions', 'admin']
-  },
-  {
-    id: '3',
-    title: 'Creating and Tracking OKRs',
-    category: 'Features',
-    content: 'Step-by-step guide to creating and monitoring OKRs...',
-    helpful: 234,
-    notHelpful: 18,
-    lastUpdated: '2024-03-13T09:20:00Z',
-    tags: ['okrs', 'objectives', 'tracking']
-  }
-];
-
-const sampleTickets: Ticket[] = [
-  {
-    id: 'TICKET-001',
-    subject: 'Cannot access dashboard',
-    status: 'open',
-    priority: 'high',
-    category: 'Access Issues',
-    createdAt: '2024-03-15T10:30:00Z',
-    updatedAt: '2024-03-15T10:30:00Z',
-    description: 'Getting error 403 when trying to access the dashboard...'
-  },
-  {
-    id: 'TICKET-002',
-    subject: 'Need help with OKR setup',
-    status: 'in-progress',
-    priority: 'medium',
-    category: 'General Support',
-    createdAt: '2024-03-14T15:45:00Z',
-    updatedAt: '2024-03-15T09:15:00Z',
-    assignee: 'John Smith',
-    description: 'Need assistance with setting up department OKRs...'
-  },
-  {
-    id: 'TICKET-003',
-    subject: 'Feature request: Export to PDF',
-    status: 'resolved',
-    priority: 'low',
-    category: 'Feature Request',
-    createdAt: '2024-03-13T09:20:00Z',
-    updatedAt: '2024-03-14T14:30:00Z',
-    assignee: 'Sarah Johnson',
-    description: 'Would like to request PDF export functionality...'
-  }
-];
+import type { SupportTicket, SupportArticle } from '../../types';
+import TicketForm from './components/TicketForm';
+import TicketList from './components/TicketList';
+import ArticleView from './components/ArticleView';
 
 export default function Support() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [view, setView] = useState<'articles' | 'tickets'>('articles');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [showNewTicketForm, setShowNewTicketForm] = useState(false);
-  const [filterCategory, setFilterCategory] = useState('all');
+  const [view, setView] = useState<'articles' | 'tickets'>('tickets');
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [articles, setArticles] = useState<SupportArticle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<SupportArticle | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const { user } = useAuth();
 
-  const getStatusColor = (status: Ticket['status']) => {
-    switch (status) {
-      case 'open':
-        return 'bg-blue-100 text-blue-800';
-      case 'in-progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'resolved':
-        return 'bg-green-100 text-green-800';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800';
+  useEffect(() => {
+    fetchData();
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [fetchedTickets, fetchedArticles] = await Promise.all([
+        supportService.getTicketsByUser(user!.id),
+        supportService.getArticles()
+      ]);
+      setTickets(fetchedTickets);
+      setArticles(fetchedArticles);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load support data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getPriorityColor = (priority: Ticket['priority']) => {
-    switch (priority) {
-      case 'urgent':
-        return 'bg-red-100 text-red-800';
-      case 'high':
-        return 'bg-orange-100 text-orange-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
+  const handleCreateTicket = async (ticketData: Omit<SupportTicket, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'userEmail'>) => {
+    try {
+      await supportService.createTicket(ticketData);
+      setSuccess('Ticket created successfully');
+      setShowTicketForm(false);
+      fetchData(); // Refresh tickets list
+    } catch (err) {
+      console.error('Error creating ticket:', err);
+      setError('Failed to create ticket');
     }
   };
 
-  const handleArticleRating = (articleId: string, helpful: boolean) => {
-    // In a real app, this would make an API call
-    setArticles(prev => prev.map(article => {
-      if (article.id === articleId) {
-        return {
-          ...article,
-          helpful: helpful ? article.helpful + 1 : article.helpful,
-          notHelpful: !helpful ? article.notHelpful + 1 : article.notHelpful
-        };
-      }
-      return article;
-    }));
-    setSuccess(helpful ? 'Thank you for your feedback!' : 'Thanks for letting us know!');
-    setTimeout(() => setSuccess(null), 3000);
+  const handleArticleRating = async (articleId: string, helpful: boolean) => {
+    try {
+      await supportService.updateArticleRating(articleId, helpful);
+      setSuccess(helpful ? 'Thank you for your feedback!' : 'Thanks for letting us know!');
+      fetchData(); // Refresh articles to update ratings
+    } catch (err) {
+      console.error('Error rating article:', err);
+      setError('Failed to submit rating');
+    }
   };
 
-  const NewTicketForm = () => (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-medium text-gray-900">Create Support Ticket</h3>
-          <button
-            onClick={() => setShowNewTicketForm(false)}
-            className="text-gray-400 hover:text-gray-500"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = 
+      ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || ticket.category === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-        <form className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Subject</label>
-            <input
-              type="text"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              placeholder="Brief description of the issue"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Category</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-              <option value="access">Access Issues</option>
-              <option value="technical">Technical Support</option>
-              <option value="feature">Feature Request</option>
-              <option value="billing">Billing</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Priority</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <textarea
-              rows={4}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              placeholder="Detailed description of your issue..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Attachments</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-              <div className="space-y-1 text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <div className="flex text-sm text-gray-600">
-                  <label
-                    htmlFor="file-upload"
-                    className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                  >
-                    <span>Upload a file</span>
-                    <input id="file-upload" name="file-upload" type="file" className="sr-only" />
-                  </label>
-                  <p className="pl-1">or drag and drop</p>
-                </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={() => setShowNewTicketForm(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
-            >
-              Create Ticket
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+  const filteredArticles = articles.filter(article => {
+    const matchesSearch = 
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || article.category === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -310,7 +138,7 @@ export default function Support() {
               </div>
               {view === 'tickets' && (
                 <button
-                  onClick={() => setShowNewTicketForm(true)}
+                  onClick={() => setShowTicketForm(true)}
                   className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                 >
                   <Plus className="h-5 w-5 mr-2" />
@@ -357,7 +185,7 @@ export default function Support() {
                 href="mailto:support@okrflow.com"
                 className="mt-4 inline-flex items-center text-primary-600 hover:text-primary-700"
               >
-                support@okrflow.com
+                roland.faye@ignite.solar
                 <ExternalLink className="h-4 w-4 ml-1" />
               </a>
             </div>
@@ -373,7 +201,7 @@ export default function Support() {
                 href="tel:+1234567890"
                 className="mt-4 inline-flex items-center text-primary-600 hover:text-primary-700"
               >
-                +1 (234) 567-890
+                +221 (775) 83-0136
                 <ExternalLink className="h-4 w-4 ml-1" />
               </a>
             </div>
@@ -386,7 +214,7 @@ export default function Support() {
                 Schedule a video call with our team
               </p>
               <button className="mt-4 inline-flex items-center text-primary-600 hover:text-primary-700">
-                Schedule Now
+                Ask roland.faye@ignite.solar in Google Chat
                 <ExternalLink className="h-4 w-4 ml-1" />
               </button>
             </div>
@@ -412,18 +240,35 @@ export default function Support() {
                   className="block rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 >
                   <option value="all">All Categories</option>
-                  <option value="getting-started">Getting Started</option>
-                  <option value="features">Features</option>
-                  <option value="administration">Administration</option>
-                  <option value="troubleshooting">Troubleshooting</option>
+                  <option value="technical">Technical Support</option>
+                  <option value="account">Account Issues</option>
+                  <option value="feature">Feature Requests</option>
+                  <option value="billing">Billing</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {view === 'articles' ? (
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
+          ) : view === 'tickets' ? (
+            <TicketList
+              tickets={filteredTickets}
+              onTicketClick={setSelectedTicket}
+            />
+          ) : selectedArticle ? (
+            <ArticleView
+              article={selectedArticle}
+              onBack={() => setSelectedArticle(null)}
+              onRate={(helpful) => handleArticleRating(selectedArticle.id, helpful)}
+              userRating={selectedArticle.ratings[user!.id]}
+            />
+          ) : (
             <div className="grid grid-cols-1 gap-6">
-              {sampleArticles.map((article) => (
+              {filteredArticles.map((article) => (
                 <div
                   key={article.id}
                   className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
@@ -435,7 +280,7 @@ export default function Support() {
                         {article.category}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-gray-500">{article.content}</p>
+                    <p className="mt-2 text-sm text-gray-500">{article.content.substring(0, 200)}...</p>
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <button
@@ -453,49 +298,12 @@ export default function Support() {
                           {article.notHelpful}
                         </button>
                       </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Clock className="h-4 w-4 mr-1" />
-                        Updated {new Date(article.lastUpdated).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {sampleTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-medium text-gray-900">{ticket.subject}</h3>
-                          <span className="ml-2 text-sm text-gray-500">#{ticket.id}</span>
-                        </div>
-                        <p className="mt-1 text-sm text-gray-500">{ticket.description}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                          {ticket.status}
-                        </span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
-                          {ticket.priority}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                      <div className="flex items-center space-x-4">
-                        <span>Category: {ticket.category}</span>
-                        {ticket.assignee && <span>Assignee: {ticket.assignee}</span>}
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
-                        <span>Updated: {new Date(ticket.updatedAt).toLocaleDateString()}</span>
-                      </div>
+                      <button
+                        onClick={() => setSelectedArticle(article)}
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      >
+                        Read More →
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -505,7 +313,12 @@ export default function Support() {
         </div>
       </div>
 
-      {showNewTicketForm && <NewTicketForm />}
+      {showTicketForm && (
+        <TicketForm
+          onSubmit={handleCreateTicket}
+          onClose={() => setShowTicketForm(false)}
+        />
+      )}
     </div>
   );
 }

@@ -6,6 +6,9 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   User as FirebaseUser
 } from 'firebase/auth';
 import { app } from '../config/firebase';
@@ -19,6 +22,7 @@ interface AuthContextType {
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (data: Partial<User>) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -122,13 +126,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!auth.currentUser || !user) {
+      throw new Error('No authenticated user');
+    }
+
+    try {
+      // Re-authenticate user before changing password
+      const credential = EmailAuthProvider.credential(
+        auth.currentUser.email!,
+        currentPassword
+      );
+      await reauthenticateWithCredential(auth.currentUser, credential);
+
+      // Change password
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (error: any) {
+      console.error('Password change error:', error);
+      if (error.code === 'auth/wrong-password') {
+        throw new Error('Current password is incorrect');
+      }
+      throw new Error('Failed to change password. Please try again.');
+    }
+  };
+
   const value = {
     user,
     loading,
     login,
     register,
     logout,
-    updateUserProfile
+    updateUserProfile,
+    changePassword
   };
 
   return (

@@ -1,4 +1,18 @@
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, getDoc, writeBatch, onSnapshot } from 'firebase/firestore';
+import { 
+  collection, 
+  doc, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  arrayUnion, 
+  arrayRemove, 
+  getDoc, 
+  writeBatch,
+  serverTimestamp
+} from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { kpiService } from './kpiService';
 import type { Objective, KPI } from '../types';
@@ -15,20 +29,8 @@ export const objectiveService = {
       })) as Objective[];
     } catch (error) {
       console.error('Error fetching objectives:', error);
-      throw new Error('Failed to fetch objectives. Please try again later.');
+      throw new Error('Failed to fetch objectives');
     }
-  },
-
-  subscribeToObjectives(callback: (objectives: Objective[]) => void) {
-    return onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
-      const objectives = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Objective[];
-      callback(objectives);
-    }, (error) => {
-      console.error('Error subscribing to objectives:', error);
-    });
   },
 
   async addObjective(objective: Omit<Objective, 'id'>) {
@@ -40,8 +42,8 @@ export const objectiveService = {
       const objectiveData = {
         ...objective,
         progress: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
       
       batch.set(objectiveRef, objectiveData);
@@ -50,7 +52,7 @@ export const objectiveService = {
       if (objective.parentId) {
         const parentRef = doc(db, COLLECTION_NAME, objective.parentId);
         batch.update(parentRef, {
-          updatedAt: new Date().toISOString()
+          updatedAt: serverTimestamp()
         });
       }
       
@@ -62,7 +64,7 @@ export const objectiveService = {
       } as Objective;
     } catch (error) {
       console.error('Error adding objective:', error);
-      throw new Error('Failed to create objective. Please try again.');
+      throw new Error('Failed to create objective');
     }
   },
 
@@ -71,31 +73,45 @@ export const objectiveService = {
       const batch = writeBatch(db);
       const objectiveRef = doc(db, COLLECTION_NAME, id);
       
-      batch.update(objectiveRef, {
+      // Get current objective data
+      const objectiveDoc = await getDoc(objectiveRef);
+      if (!objectiveDoc.exists()) {
+        throw new Error('Objective not found');
+      }
+      
+      const currentObjective = objectiveDoc.data() as Objective;
+      
+      // Prepare update data with server timestamp
+      const updateData = {
         ...objective,
-        updatedAt: new Date().toISOString()
-      });
+        updatedAt: serverTimestamp()
+      };
+      
+      batch.update(objectiveRef, updateData);
       
       // Update parent objective if exists
-      if (objective.parentId) {
-        const parentRef = doc(db, COLLECTION_NAME, objective.parentId);
+      if (currentObjective.parentId) {
+        const parentRef = doc(db, COLLECTION_NAME, currentObjective.parentId);
         batch.update(parentRef, {
-          updatedAt: new Date().toISOString()
+          updatedAt: serverTimestamp()
         });
       }
       
       await batch.commit();
       
-      // Recalculate progress
-      await this.calculateProgress(id);
+      // Recalculate progress for parent if exists
+      if (currentObjective.parentId) {
+        await this.calculateProgress(currentObjective.parentId);
+      }
       
       return {
         id,
+        ...currentObjective,
         ...objective
-      };
+      } as Objective;
     } catch (error) {
       console.error('Error updating objective:', error);
-      throw new Error('Failed to update objective. Please try again.');
+      throw new Error('Failed to update objective');
     }
   },
 
@@ -106,34 +122,41 @@ export const objectiveService = {
       
       // Get objective data
       const objectiveDoc = await getDoc(objectiveRef);
+      if (!objectiveDoc.exists()) {
+        throw new Error('Objective not found');
+      }
+      
       const objective = objectiveDoc.data() as Objective;
       
       // Archive objective
       batch.update(objectiveRef, {
         status: 'archived',
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
       
       // Update parent objective if exists
       if (objective.parentId) {
         const parentRef = doc(db, COLLECTION_NAME, objective.parentId);
         batch.update(parentRef, {
-          updatedAt: new Date().toISOString()
+          updatedAt: serverTimestamp()
         });
-        
-        // Recalculate parent progress
-        await this.calculateProgress(objective.parentId);
       }
       
       await batch.commit();
+      
+      // Recalculate parent progress if exists
+      if (objective.parentId) {
+        await this.calculateProgress(objective.parentId);
+      }
     } catch (error) {
       console.error('Error archiving objective:', error);
-      throw new Error('Failed to archive objective. Please try again.');
+      throw new Error('Failed to archive objective');
     }
   },
 
   async calculateProgress(objectiveId: string): Promise<number> {
     try {
+      const batch = writeBatch(db);
       const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
       const objectiveDoc = await getDoc(objectiveRef);
       
@@ -179,11 +202,13 @@ export const objectiveService = {
       const progress = totalCount > 0 ? Math.round(totalProgress / totalCount) : 0;
 
       // Update objective progress
-      await updateDoc(objectiveRef, {
+      batch.update(objectiveRef, {
         progress,
-        updatedAt: new Date().toISOString(),
+        updatedAt: serverTimestamp(),
         status: progress >= 90 ? 'on-track' : progress >= 60 ? 'at-risk' : 'behind'
       });
+
+      await batch.commit();
 
       // Update parent objective if exists
       if (objective.parentId) {
@@ -193,7 +218,7 @@ export const objectiveService = {
       return progress;
     } catch (error) {
       console.error('Error calculating objective progress:', error);
-      throw new Error('Failed to calculate progress. Please try again.');
+      throw new Error('Failed to calculate progress');
     }
   },
 
@@ -205,34 +230,25 @@ export const objectiveService = {
       const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
       batch.update(objectiveRef, {
         kpiIds: arrayUnion(kpiId),
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
       
       // Update KPI
       const kpiRef = doc(db, 'kpis', kpiId);
       batch.update(kpiRef, {
         objectiveIds: arrayUnion(objectiveId),
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
       
       await batch.commit();
 
-      // Calculate new progress after linking KPI
+      // Calculate new progress
       const progress = await this.calculateProgress(objectiveId);
-
-      // Get the objective to check for parent
-      const objectiveDoc = await getDoc(objectiveRef);
-      const objective = objectiveDoc.data() as Objective;
-
-      // If there's a parent objective, update its progress too
-      if (objective.parentId) {
-        await this.calculateProgress(objective.parentId);
-      }
 
       return progress;
     } catch (error) {
       console.error('Error linking KPI to objective:', error);
-      throw error;
+      throw new Error('Failed to link KPI');
     }
   },
 
@@ -244,34 +260,25 @@ export const objectiveService = {
       const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
       batch.update(objectiveRef, {
         kpiIds: arrayRemove(kpiId),
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
       
       // Update KPI
       const kpiRef = doc(db, 'kpis', kpiId);
       batch.update(kpiRef, {
         objectiveIds: arrayRemove(objectiveId),
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
       
       await batch.commit();
 
-      // Recalculate progress after unlinking KPI
+      // Recalculate progress
       const progress = await this.calculateProgress(objectiveId);
-
-      // Get the objective to check for parent
-      const objectiveDoc = await getDoc(objectiveRef);
-      const objective = objectiveDoc.data() as Objective;
-
-      // If there's a parent objective, update its progress too
-      if (objective.parentId) {
-        await this.calculateProgress(objective.parentId);
-      }
 
       return progress;
     } catch (error) {
       console.error('Error unlinking KPI from objective:', error);
-      throw error;
+      throw new Error('Failed to unlink KPI');
     }
   }
 };

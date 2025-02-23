@@ -1,116 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { objectiveService } from '../../services/objectiveService';
+import React, { useState } from 'react';
 import Sidebar from '../Sidebar';
+import { Target, AlertTriangle } from 'lucide-react';
+import { useObjectives } from './hooks/useObjectives';
+import { useObjectiveFilters } from './hooks/useObjectiveFilters';
 import ObjectiveHierarchy from './components/ObjectiveHierarchy';
+import ObjectiveDetails from './components/ObjectiveDetails';
 import ObjectiveForm from './ObjectiveForm';
 import ObjectiveHeader from './components/ObjectiveHeader';
-import ObjectiveDetails from './components/ObjectiveDetails';
-import { Target, AlertTriangle } from 'lucide-react';
+import Filters from './components/Filters';
+import ViewToggle from './components/ViewToggle';
+import GridView from './components/GridView';
+import KanbanView from './components/KanbanView';
 import type { Objective } from '../../types';
 
 export default function Objectives() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [objectives, setObjectives] = useState<Objective[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
+  const [view, setView] = useState<'hierarchy' | 'grid' | 'kanban'>('grid'); // Changed default to 'grid'
 
-  useEffect(() => {
-    fetchObjectives();
-  }, []);
+  const {
+    objectives,
+    loading,
+    error,
+    addObjective,
+    updateObjective,
+    archiveObjective,
+    linkKPI,
+    unlinkKPI
+  } = useObjectives();
 
-  const fetchObjectives = async () => {
+  const {
+    filters,
+    setFilters,
+    sort,
+    setSort,
+    showFilters,
+    setShowFilters,
+    departments,
+    contributors,
+    filteredObjectives
+  } = useObjectiveFilters(objectives);
+
+  const handleAddObjective = async (objective: Omit<Objective, 'id'>) => {
     try {
-      setLoading(true);
-      const fetchedObjectives = await objectiveService.getObjectives();
-      setObjectives(fetchedObjectives);
+      const newObjective = await addObjective(objective);
+      setShowForm(false);
+      setSelectedObjective(newObjective);
     } catch (err) {
-      setError('Failed to load objectives. Please try again later.');
-      console.error('Error fetching objectives:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleObjectiveSelect = (objective: Objective) => {
-    setSelectedObjective(objective);
-  };
-
-  const handleAddObjective = async (newObjective: any) => {
-    try {
-      const createdObjective = await objectiveService.addObjective(newObjective);
-      setObjectives(prev => [...prev, createdObjective]);
-      setShowAddModal(false);
-    } catch (err) {
-      setError('Failed to create objective. Please try again.');
       console.error('Error adding objective:', err);
     }
   };
 
-  const handleEditObjective = async (updatedObjective: any) => {
+  const handleEditObjective = async (objective: Objective) => {
     try {
-      await objectiveService.updateObjective(updatedObjective.id, updatedObjective);
-      setObjectives(prev => prev.map(obj =>
-        obj.id === updatedObjective.id ? updatedObjective : obj
-      ));
-      setShowEditModal(false);
-      setSelectedObjective(updatedObjective);
+      await updateObjective(objective);
+      setEditingObjective(null);
+      setSelectedObjective(objective);
     } catch (err) {
-      setError('Failed to update objective. Please try again.');
       console.error('Error updating objective:', err);
-    }
-  };
-
-  const handleArchiveObjective = async () => {
-    if (!selectedObjective) return;
-
-    try {
-      await objectiveService.archiveObjective(selectedObjective.id);
-      setObjectives(prev => prev.filter(obj => obj.id !== selectedObjective.id));
-      setSelectedObjective(null);
-    } catch (err) {
-      setError('Failed to archive objective. Please try again.');
-      console.error('Error archiving objective:', err);
-    }
-  };
-
-  const handleLinkKPI = async (kpiId: string) => {
-    if (!selectedObjective) return;
-
-    try {
-      await objectiveService.linkKPI(selectedObjective.id, kpiId);
-      const updatedObjective = {
-        ...selectedObjective,
-        kpiIds: [...(selectedObjective.kpiIds || []), kpiId]
-      };
-      setObjectives(prev => prev.map(obj =>
-        obj.id === selectedObjective.id ? updatedObjective : obj
-      ));
-      setSelectedObjective(updatedObjective);
-    } catch (err) {
-      setError('Failed to link KPI to objective. Please try again.');
-      console.error('Error linking KPI:', err);
-    }
-  };
-
-  const handleUnlinkKPI = async (kpiId: string) => {
-    if (!selectedObjective) return;
-
-    try {
-      await objectiveService.unlinkKPI(selectedObjective.id, kpiId);
-      const updatedObjective = {
-        ...selectedObjective,
-        kpiIds: selectedObjective.kpiIds?.filter(id => id !== kpiId) || []
-      };
-      setObjectives(prev => prev.map(obj =>
-        obj.id === selectedObjective.id ? updatedObjective : obj
-      ));
-      setSelectedObjective(updatedObjective);
-    } catch (err) {
-      setError('Failed to unlink KPI from objective. Please try again.');
-      console.error('Error unlinking KPI:', err);
     }
   };
 
@@ -120,13 +69,16 @@ export default function Objectives() {
       
       <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
         <div className="max-w-7xl mx-auto">
-          <ObjectiveHeader 
-            onAddClick={() => setShowAddModal(true)} 
-            parentObjective={selectedObjective}
-          />
+          <div className="flex justify-between items-center mb-8">
+            <ObjectiveHeader 
+              onAddClick={() => setShowForm(true)} 
+              parentObjective={selectedObjective}
+            />
+            <ViewToggle view={view} setView={setView} />
+          </div>
 
           {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded">
               <div className="flex">
                 <AlertTriangle className="h-5 w-5 text-red-400" />
                 <p className="ml-3 text-sm text-red-700">{error}</p>
@@ -134,54 +86,89 @@ export default function Objectives() {
             </div>
           )}
 
+          <Filters
+            filters={filters}
+            setFilters={setFilters}
+            departments={departments}
+            contributors={contributors}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            sort={sort}
+            setSort={setSort}
+          />
+
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1">
-                <ObjectiveHierarchy 
-                  objectives={objectives}
-                  onObjectiveSelect={handleObjectiveSelect}
-                />
-              </div>
-              
-              <div className="lg:col-span-2">
-                {selectedObjective ? (
-                  <ObjectiveDetails
-                    objective={selectedObjective}
-                    onEdit={() => setShowEditModal(true)}
-                    onArchive={handleArchiveObjective}
-                    onLinkKPI={handleLinkKPI}
-                    onUnlinkKPI={handleUnlinkKPI}
-                  />
-                ) : (
-                  <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center justify-center text-gray-500 h-96">
-                    <Target className="h-12 w-12 text-gray-400 mb-4" />
-                    <p className="text-lg font-medium mb-2">No objective selected</p>
-                    <p className="text-sm">Select an objective from the hierarchy to view details</p>
+              {view === 'hierarchy' ? (
+                <>
+                  <div className="lg:col-span-1">
+                    <ObjectiveHierarchy 
+                      objectives={filteredObjectives}
+                      onObjectiveSelect={setSelectedObjective}
+                    />
                   </div>
-                )}
-              </div>
+                  
+                  <div className="lg:col-span-2">
+                    {selectedObjective ? (
+                      <ObjectiveDetails
+                        objective={selectedObjective}
+                        onEdit={() => setEditingObjective(selectedObjective)}
+                        onArchive={() => archiveObjective(selectedObjective.id)}
+                        onLinkKPI={linkKPI}
+                        onUnlinkKPI={unlinkKPI}
+                      />
+                    ) : (
+                      <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center justify-center text-gray-500 h-96">
+                        <Target className="h-12 w-12 text-gray-400 mb-4" />
+                        <p className="text-lg font-medium mb-2">No objective selected</p>
+                        <p className="text-sm">Select an objective from the hierarchy to view details</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : view === 'grid' ? (
+                <div className="lg:col-span-3">
+                  <GridView
+                    objectives={filteredObjectives}
+                    selectedObjective={selectedObjective}
+                    onObjectiveSelect={setSelectedObjective}
+                    onEdit={() => setEditingObjective(selectedObjective)}
+                    onArchive={archiveObjective}
+                    onLinkKPI={linkKPI}
+                    onUnlinkKPI={unlinkKPI}
+                  />
+                </div>
+              ) : (
+                <div className="lg:col-span-3">
+                  <KanbanView
+                    objectives={filteredObjectives}
+                    selectedObjective={selectedObjective}
+                    onObjectiveSelect={setSelectedObjective}
+                    onEdit={() => setEditingObjective(selectedObjective)}
+                    onArchive={archiveObjective}
+                    onLinkKPI={linkKPI}
+                    onUnlinkKPI={unlinkKPI}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {showAddModal && (
+      {(showForm || editingObjective) && (
         <ObjectiveForm
-          onClose={() => setShowAddModal(false)}
-          onSubmit={handleAddObjective}
+          onClose={() => {
+            setShowForm(false);
+            setEditingObjective(null);
+          }}
+          onSubmit={editingObjective ? handleEditObjective : handleAddObjective}
+          initialData={editingObjective}
           parentObjective={selectedObjective}
-        />
-      )}
-
-      {showEditModal && selectedObjective && (
-        <ObjectiveForm
-          onClose={() => setShowEditModal(false)}
-          onSubmit={handleEditObjective}
-          initialData={selectedObjective}
         />
       )}
     </div>

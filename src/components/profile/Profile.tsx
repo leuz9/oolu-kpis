@@ -19,6 +19,51 @@ import {
 } from 'lucide-react';
 import Sidebar from '../Sidebar';
 
+// Comprehensive list of departments
+const DEPARTMENTS = [
+  'Executive',
+  'Finance',
+  'Human Resources',
+  'Information Technology',
+  'Marketing',
+  'Operations',
+  'Research & Development',
+  'Sales',
+  'Customer Service',
+  'Legal',
+  'Product Management',
+  'Engineering',
+  'Quality Assurance',
+  'Business Development',
+  'Public Relations',
+  'Supply Chain',
+  'Administration',
+  'Project Management',
+  'Data Analytics',
+  'Design',
+  'Content',
+  'Training & Development',
+  'Compliance',
+  'Risk Management',
+  'Facilities',
+  'Security',
+  'Innovation',
+  'Strategy',
+  'Consulting',
+  'Customer Success',
+  'Technical Support',
+  'Infrastructure',
+  'Communications',
+  'Procurement',
+  'Logistics',
+  'Manufacturing',
+  'Production',
+  'Maintenance',
+  'Health & Safety',
+  'Environmental',
+  'Corporate Services'
+].sort();
+
 export default function Profile() {
   const { user, updateUserProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -32,7 +77,7 @@ export default function Profile() {
     phone: user?.phone || '',
     location: user?.location || '',
     role: user?.role || 'User',
-    department: user?.department || 'Not specified',
+    department: user?.department || '',
     bio: user?.bio || '',
     jobTitle: user?.jobTitle || '',
     startDate: user?.startDate || '',
@@ -235,13 +280,27 @@ export default function Profile() {
                       <label className="block text-sm font-medium text-gray-700">Department</label>
                       <div className="mt-1 flex items-center">
                         <Building2 className="h-5 w-5 text-gray-400 mr-2" />
-                        <input
-                          type="text"
-                          value={formData.department}
-                          onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                          disabled={!isEditing}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-500"
-                        />
+                        {isEditing ? (
+                          <select
+                            value={formData.department}
+                            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                          >
+                            <option value="">Select Department</option>
+                            {DEPARTMENTS.map((dept) => (
+                              <option key={dept} value={dept}>
+                                {dept}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={formData.department}
+                            disabled
+                            className="block w-full rounded-md border-gray-300 shadow-sm bg-gray-50 text-gray-500"
+                          />
+                        )}
                       </div>
                     </div>
 

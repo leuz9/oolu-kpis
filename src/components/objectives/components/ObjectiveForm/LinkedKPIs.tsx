@@ -1,5 +1,4 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
 import type { KPI } from '../../../../types';
 
 interface LinkedKPIsProps {
@@ -7,28 +6,21 @@ interface LinkedKPIsProps {
   selectedKPIs: string[];
   loading: boolean;
   onSelect: (kpiId: string) => void;
-  onCreateNew: () => void;
 }
 
 export default function LinkedKPIs({ 
   kpis, 
   selectedKPIs, 
   loading, 
-  onSelect,
-  onCreateNew 
+  onSelect
 }: LinkedKPIsProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <label className="block text-sm font-medium text-gray-700">Key Performance Indicators</label>
-        <button
-          type="button"
-          onClick={onCreateNew}
-          className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Create New KPI
-        </button>
+        <span className="text-sm text-gray-500">
+          {selectedKPIs.length} selected
+        </span>
       </div>
 
       {loading ? (

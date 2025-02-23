@@ -8,20 +8,17 @@ import ValuesAndUnits from './ValuesAndUnits';
 import DateInputs from './DateInputs';
 import StatusPreview from './StatusPreview';
 import FormActions from './FormActions';
-import ParentObjectiveSelect from './ParentObjectiveSelect';
-import Contributors from './Contributors';
 import { calculateTrend, calculateStatus } from './utils';
-import { objectiveService } from '../../../../services/objectiveService';
-import { userService } from '../../../../services/userService';
-import type { KPI, Objective, User } from '../../../../types';
+import type { KPI, User } from '../../../../types';
 
-interface KPIFormProps {
+interface FormProps {
   onClose: () => void;
   onSubmit: (kpi: Partial<KPI>) => Promise<void>;
   initialData?: Partial<KPI>;
+  availableUsers: User[];
 }
 
-export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps) {
+export default function Form({ onClose, onSubmit, initialData, availableUsers }: FormProps) {
   const [formData, setFormData] = useState<Partial<KPI>>(initialData || {
     name: '',
     description: '',
@@ -44,36 +41,7 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
   const [customUnit, setCustomUnit] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [objectives, setObjectives] = useState<Objective[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loadingObjectives, setLoadingObjectives] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoadingObjectives(true);
-        setLoadingUsers(true);
-        
-        const [fetchedObjectives, fetchedUsers] = await Promise.all([
-          objectiveService.getObjectives(),
-          userService.getAllUsers()
-        ]);
-        
-        setObjectives(fetchedObjectives);
-        setUsers(fetchedUsers);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load data');
-      } finally {
-        setLoadingObjectives(false);
-        setLoadingUsers(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +49,7 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
 
     // Validation
     if (!formData.name?.trim()) {
-      setError('KPI name is required');
+      setError('Key result name is required');
       return;
     }
 
@@ -116,8 +84,8 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
       await onSubmit(kpiData);
       onClose();
     } catch (err) {
-      setError('Failed to save KPI. Please try again.');
-      console.error('Error saving KPI:', err);
+      setError('Failed to save key result. Please try again.');
+      console.error('Error saving key result:', err);
     } finally {
       setLoading(false);
     }
@@ -140,7 +108,7 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
     });
   };
 
-  const handleContributorSelect = (userId: string) => {
+  const handleContributorToggle = (userId: string) => {
     const contributors = formData.contributors || [];
     const newContributors = contributors.includes(userId)
       ? contributors.filter(id => id !== userId)
@@ -154,9 +122,9 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg p-6 w-[90%] max-h-[90vh] overflow-y-auto">
         <FormHeader
-          title={initialData ? 'Edit KPI' : 'Create New KPI'}
+          title={initialData ? 'Edit Key Result' : 'Create New Key Result'}
           onClose={onClose}
         />
 
@@ -189,37 +157,52 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
             />
           </div>
 
-          {/* Parent Objective Section */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-            <h3 className="text-sm font-medium text-gray-900 flex items-center">
-              <Target className="h-4 w-4 mr-2 text-primary-600" />
-              Alignment
-            </h3>
-            <ParentObjectiveSelect
-              objectives={objectives}
-              selectedObjectiveId={formData.objectiveIds?.[0]}
-              onChange={(objectiveId) => {
-                setFormData({
-                  ...formData,
-                  objectiveIds: objectiveId ? [objectiveId] : []
-                });
-              }}
-              loading={loadingObjectives}
-            />
-          </div>
-
           {/* Contributors Section */}
           <div className="bg-gray-50 p-4 rounded-lg space-y-4">
             <h3 className="text-sm font-medium text-gray-900 flex items-center">
               <Users className="h-4 w-4 mr-2 text-primary-600" />
               Contributors
             </h3>
-            <Contributors
-              contributors={formData.contributors || []}
-              users={users}
-              loading={loadingUsers}
-              onSelect={handleContributorSelect}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {availableUsers.map((user) => (
+                <div
+                  key={user.id}
+                  onClick={() => handleContributorToggle(user.id)}
+                  className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                    formData.contributors?.includes(user.id)
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-200 hover:border-primary-300'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt={user.displayName || ''}
+                          className="h-8 w-8 rounded-full"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                          <span className="text-primary-600 font-medium text-sm">
+                            {user.displayName?.charAt(0) || user.email.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {user.displayName || user.email}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {user.role}
+                        {user.department && ` • ${user.department}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Values and Units Section */}
@@ -277,7 +260,7 @@ export default function KPIForm({ onClose, onSubmit, initialData }: KPIFormProps
                     value={formData.owner || ''}
                     onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                    placeholder="KPI owner"
+                    placeholder="Key result owner"
                   />
                 </div>
 

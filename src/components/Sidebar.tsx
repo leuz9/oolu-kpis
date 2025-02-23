@@ -48,7 +48,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     // Main Menu
     { icon: <Home />, label: 'Dashboard', path: '/' },
     { icon: <Target />, label: 'Objectives', path: '/objectives' },
-    { icon: <PieChart />, label: 'KPIs', path: '/kpis' },
+    { icon: <PieChart />, label: 'Key Results', path: '/key-results' },
     { icon: <Users />, label: 'Team', path: '/team' },
     { icon: <Briefcase />, label: 'Projects', path: '/projects' },
     { icon: <Book />, label: 'Documentation', path: '/documentation' },
@@ -87,7 +87,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
       <div className="p-4 flex items-center justify-between border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
         <div className="flex items-center">
           <img 
-            src="https://ignite-power.com/wp-content/uploads/2024/03/ignite-logo.png" 
+            src="https://igniteaccess.com/wp-content/uploads/2025/01/logo-new.png" 
             alt="Ignite Power" 
             className="h-8 w-8 object-contain bg-white rounded-lg p-1"
           />

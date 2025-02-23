@@ -31,7 +31,7 @@ export default function AuthLayout({ children, title, subtitle, linkText, linkTo
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="flex justify-center">
             <img 
-              src="https://ignite-power.com/wp-content/uploads/2024/03/ignite-logo.png" 
+              src="https://igniteaccess.com/wp-content/uploads/2025/01/logo-new.png" 
               alt="Ignite Power" 
               className="h-12 w-12 object-contain bg-white rounded-xl p-2"
             />

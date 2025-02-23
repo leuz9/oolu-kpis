@@ -6,6 +6,7 @@ import AuthAlert from './components/AuthAlert';
 import EmailInput from './components/EmailInput';
 import PasswordInput from './components/PasswordInput';
 import SubmitButton from './components/SubmitButton';
+import SupernovaTransition from './components/SupernovaTransition';
 
 export default function Login() {
   const [emailPrefix, setEmailPrefix] = useState('');
@@ -14,6 +15,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showTransition, setShowTransition] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,10 +48,8 @@ export default function Login() {
       setError('');
       setLoading(true);
       await login(email, password);
-      setSuccess('Login successful! Redirecting...');
-      setTimeout(() => {
-        navigate('/');
-      }, 1000);
+      setSuccess('Login successful!');
+      setShowTransition(true);
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         setError('Invalid email or password');
@@ -58,39 +58,48 @@ export default function Login() {
       } else {
         setError('Failed to log in. Please check your credentials and try again.');
       }
-    } finally {
       setLoading(false);
     }
   }
 
+  const handleTransitionComplete = () => {
+    navigate('/');
+  };
+
   return (
-    <AuthLayout
-      title="Sign in to OKRFlow"
-      subtitle="Or"
-      linkText="create a new account"
-      linkTo="/register"
-    >
-      <AuthAlert type="error" message={error} />
-      <AuthAlert type="success" message={success} />
-      
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <EmailInput
-          value={emailPrefix}
-          onChange={(e) => setEmailPrefix(e.target.value)}
-          suffix={emailSuffix}
-        />
+    <>
+      <AuthLayout
+        title="Sign in to OKRFlow"
+        subtitle="Or"
+        linkText="create a new account"
+        linkTo="/register"
+      >
+        <AuthAlert type="error" message={error} />
+        <AuthAlert type="success" message={success} />
+        
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <EmailInput
+            value={emailPrefix}
+            onChange={(e) => setEmailPrefix(e.target.value)}
+            suffix={emailSuffix}
+          />
 
-        <PasswordInput
-          id="password"
-          label="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          showPassword={showPassword}
-          onTogglePassword={() => setShowPassword(!showPassword)}
-        />
+          <PasswordInput
+            id="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            showPassword={showPassword}
+            onTogglePassword={() => setShowPassword(!showPassword)}
+          />
 
-        <SubmitButton type="login" loading={loading} />
-      </form>
-    </AuthLayout>
+          <SubmitButton type="login" loading={loading} />
+        </form>
+      </AuthLayout>
+
+      {showTransition && (
+        <SupernovaTransition onComplete={handleTransitionComplete} />
+      )}
+    </>
   );
 }
