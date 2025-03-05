@@ -55,7 +55,12 @@ export const userService = {
 
   async getAllUsers() {
     try {
-      const usersSnapshot = await getDocs(collection(db, USER_COLLECTION));
+      // Add query to exclude superadmin users
+      const q = query(
+        collection(db, USER_COLLECTION),
+        where('role', '!=', 'superadmin')
+      );
+      const usersSnapshot = await getDocs(q);
       return usersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -68,6 +73,17 @@ export const userService = {
 
   async updateUser(userId: string, data: Partial<User>) {
     try {
+      // Check if user exists and is not a superadmin
+      const userDoc = await getDoc(doc(db, USER_COLLECTION, userId));
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+
+      const userData = userDoc.data() as User;
+      if (userData.role === 'superadmin') {
+        throw new Error('Cannot modify superadmin users');
+      }
+
       const userRef = doc(db, USER_COLLECTION, userId);
       const updateData = {
         ...data,
@@ -79,6 +95,11 @@ export const userService = {
       delete updateData.email;
       delete updateData.createdAt;
       delete updateData.customClaims;
+
+      // Prevent changing role to superadmin
+      if (updateData.role === 'superadmin') {
+        throw new Error('Cannot assign superadmin role');
+      }
       
       await updateDoc(userRef, updateData);
       return data;
@@ -114,6 +135,17 @@ export const userService = {
 
   async deleteUser(userId: string) {
     try {
+      // Check if user is superadmin
+      const userDoc = await getDoc(doc(db, USER_COLLECTION, userId));
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+
+      const userData = userDoc.data() as User;
+      if (userData.role === 'superadmin') {
+        throw new Error('Cannot delete superadmin users');
+      }
+
       await deleteDoc(doc(db, USER_COLLECTION, userId));
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -123,6 +155,17 @@ export const userService = {
 
   async linkTeamMember(userId: string, teamMemberId: string) {
     try {
+      // Check if user is superadmin
+      const userDoc = await getDoc(doc(db, USER_COLLECTION, userId));
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+
+      const userData = userDoc.data() as User;
+      if (userData.role === 'superadmin') {
+        throw new Error('Cannot modify superadmin users');
+      }
+
       const userRef = doc(db, USER_COLLECTION, userId);
       await updateDoc(userRef, { teamMemberId });
 

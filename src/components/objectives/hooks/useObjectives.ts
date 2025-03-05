@@ -54,9 +54,24 @@ export function useObjectives() {
     try {
       await objectiveService.archiveObjective(objectiveId);
       setObjectives(prev => prev.filter(obj => obj.id !== objectiveId));
-    } catch (err) {
-      setError('Failed to archive objective. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to archive objective. Please try again.');
       console.error('Error archiving objective:', err);
+      throw err;
+    }
+  };
+
+  const deleteObjective = async (objectiveId: string) => {
+    try {
+      await objectiveService.deleteObjective(objectiveId);
+      setObjectives(prev => prev.filter(obj => obj.id !== objectiveId));
+    } catch (err: any) {
+      if (err.message === 'Only superadmin can delete objectives') {
+        setError('Only superadmin can delete objectives');
+      } else {
+        setError('Failed to delete objective. Please try again.');
+      }
+      console.error('Error deleting objective:', err);
       throw err;
     }
   };
@@ -64,11 +79,13 @@ export function useObjectives() {
   const linkKPI = async (objectiveId: string, kpiId: string) => {
     try {
       await objectiveService.linkKPI(objectiveId, kpiId);
+      const updatedObjective = await objectiveService.calculateProgress(objectiveId);
       setObjectives(prev => prev.map(obj => {
         if (obj.id === objectiveId) {
           return {
             ...obj,
-            kpiIds: [...(obj.kpiIds || []), kpiId]
+            kpiIds: [...(obj.kpiIds || []), kpiId],
+            progress: updatedObjective
           };
         }
         return obj;
@@ -83,11 +100,13 @@ export function useObjectives() {
   const unlinkKPI = async (objectiveId: string, kpiId: string) => {
     try {
       await objectiveService.unlinkKPI(objectiveId, kpiId);
+      const updatedObjective = await objectiveService.calculateProgress(objectiveId);
       setObjectives(prev => prev.map(obj => {
         if (obj.id === objectiveId) {
           return {
             ...obj,
-            kpiIds: obj.kpiIds?.filter(id => id !== kpiId) || []
+            kpiIds: obj.kpiIds?.filter(id => id !== kpiId) || [],
+            progress: updatedObjective
           };
         }
         return obj;
@@ -106,6 +125,7 @@ export function useObjectives() {
     addObjective,
     updateObjective,
     archiveObjective,
+    deleteObjective,
     linkKPI,
     unlinkKPI,
     refreshObjectives: fetchObjectives

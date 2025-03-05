@@ -6,7 +6,8 @@ import {
   deleteDoc, 
   query, 
   where, 
-  serverTimestamp 
+  serverTimestamp,
+  getDoc 
 } from 'firebase/firestore';
 import { getAuth, deleteUser } from 'firebase/auth';
 import { db } from '../config/firebase';
@@ -18,7 +19,12 @@ const ROLES_COLLECTION = 'roles';
 export const adminService = {
   async getUsers() {
     try {
-      const usersSnapshot = await getDocs(collection(db, USERS_COLLECTION));
+      // Add query to exclude superadmin users
+      const q = query(
+        collection(db, USERS_COLLECTION),
+        where('role', '!=', 'superadmin')
+      );
+      const usersSnapshot = await getDocs(q);
       return usersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -31,7 +37,17 @@ export const adminService = {
 
   async updateUser(userId: string, data: Partial<User>) {
     try {
+      // First check if target user is a superadmin
       const userRef = doc(db, USERS_COLLECTION, userId);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+
+      const userData = userDoc.data() as User;
+      if (userData.role === 'superadmin') {
+        throw new Error('Cannot modify superadmin users');
+      }
       
       // Prepare update data
       const updateData = {
@@ -43,6 +59,12 @@ export const adminService = {
       delete updateData.id;
       delete updateData.email;
       delete updateData.createdAt;
+      delete updateData.customClaims;
+
+      // Prevent changing role to superadmin
+      if (updateData.role === 'superadmin') {
+        throw new Error('Cannot assign superadmin role');
+      }
 
       await updateDoc(userRef, updateData);
 
@@ -55,8 +77,20 @@ export const adminService = {
 
   async deleteUser(userId: string) {
     try {
+      // Check if target user is a superadmin
+      const userRef = doc(db, USERS_COLLECTION, userId);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+
+      const userData = userDoc.data() as User;
+      if (userData.role === 'superadmin') {
+        throw new Error('Cannot delete superadmin users');
+      }
+
       // Delete from Firestore
-      await deleteDoc(doc(db, USERS_COLLECTION, userId));
+      await deleteDoc(userRef);
       
       // Delete from Firebase Auth
       const auth = getAuth();
@@ -72,6 +106,11 @@ export const adminService = {
 
   async updateRole(roleId: string, role: Role) {
     try {
+      // Prevent modifying superadmin role
+      if (roleId === 'superadmin') {
+        throw new Error('Cannot modify superadmin role');
+      }
+
       const roleRef = doc(db, ROLES_COLLECTION, roleId);
       await updateDoc(roleRef, {
         permissions: role.permissions,
@@ -79,8 +118,13 @@ export const adminService = {
       });
 
       // Update all users with this role to have the new permissions
-      const usersQuery = query(collection(db, USERS_COLLECTION), where('role', '==', roleId));
-      const usersSnapshot = await getDocs(usersQuery);
+      const q = query(
+        collection(db, USERS_COLLECTION), 
+        where('role', '==', roleId),
+        // Exclude superadmin users from role updates
+        where('role', '!=', 'superadmin')
+      );
+      const usersSnapshot = await getDocs(q);
       
       const batch = db.batch();
       usersSnapshot.docs.forEach(userDoc => {

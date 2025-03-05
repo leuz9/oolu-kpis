@@ -105,10 +105,23 @@ export default function Filters({
               <User className="h-4 w-4 mr-2" />
               My Objectives
             </button>
+            {user?.department && (
+              <button
+                onClick={() => setFilters({ ...filters, department: user.department || 'all' })}
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  filters.department === user.department
+                    ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                My Department
+              </button>
+            )}
             <button
-              onClick={() => setFilters({ ...filters, contributor: 'all' })}
+              onClick={() => setFilters({ ...filters, contributor: 'all', department: 'all' })}
               className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                filters.contributor === 'all'
+                filters.contributor === 'all' && filters.department === 'all'
                   ? 'bg-primary-100 text-primary-700 border border-primary-200'
                   : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
               }`}

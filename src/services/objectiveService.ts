@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { kpiService } from './kpiService';
+import { getAuth } from 'firebase/auth';
 import type { Objective, KPI } from '../types';
 
 const COLLECTION_NAME = 'objectives';
@@ -279,6 +280,82 @@ export const objectiveService = {
     } catch (error) {
       console.error('Error unlinking KPI from objective:', error);
       throw new Error('Failed to unlink KPI');
+    }
+  },
+
+  async deleteObjective(id: string) {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get user data to check role
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
+      if (userData?.role !== 'superadmin') {
+        throw new Error('Only superadmin can delete objectives');
+      }
+
+      const batch = writeBatch(db);
+      const objectiveRef = doc(db, COLLECTION_NAME, id);
+      
+      // Get objective data
+      const objectiveDoc = await getDoc(objectiveRef);
+      if (!objectiveDoc.exists()) {
+        throw new Error('Objective not found');
+      }
+      
+      const objective = objectiveDoc.data() as Objective;
+      
+      // Delete all child objectives recursively
+      const childrenQuery = query(
+        collection(db, COLLECTION_NAME),
+        where('parentId', '==', id)
+      );
+      const childrenSnapshot = await getDocs(childrenQuery);
+      
+      // Add child objective deletions to batch
+      childrenSnapshot.docs.forEach(childDoc => {
+        batch.delete(childDoc.ref);
+      });
+
+      // Unlink from parent if exists
+      if (objective.parentId) {
+        const parentRef = doc(db, COLLECTION_NAME, objective.parentId);
+        batch.update(parentRef, {
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      // Unlink any associated KPIs
+      if (objective.kpiIds?.length) {
+        for (const kpiId of objective.kpiIds) {
+          const kpiRef = doc(db, 'kpis', kpiId);
+          batch.update(kpiRef, {
+            objectiveIds: arrayRemove(id),
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+      
+      // Delete the objective
+      batch.delete(objectiveRef);
+      
+      await batch.commit();
+
+      // Recalculate parent progress if exists
+      if (objective.parentId) {
+        await this.calculateProgress(objective.parentId);
+      }
+    } catch (error: any) {
+      console.error('Error deleting objective:', error);
+      if (error.message === 'Only superadmin can delete objectives') {
+        throw error;
+      }
+      throw new Error('Failed to delete objective');
     }
   }
 };

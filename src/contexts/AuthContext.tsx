@@ -95,15 +95,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      if (user) {
-        await userService.updateUser(user.id, {
-          lastSeen: new Date().toISOString()
-        });
+      if (!auth.currentUser) {
+        throw new Error('No authenticated user');
       }
+
+      // Update last seen timestamp before signing out
+      if (user) {
+        await userService.updateLastSeen(user.id);
+      }
+
+      // Sign out from Firebase Auth
       await signOut(auth);
-    } catch (error) {
+      
+      // Clear local user state
+      setUser(null);
+    } catch (error: any) {
       console.error('Logout error:', error);
-      throw new Error('Failed to logout. Please try again.');
+      throw new Error(error.message || 'Failed to logout. Please try again.');
     }
   };
 
@@ -120,9 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           photoURL: data.photoURL
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Profile update error:', error);
-      throw new Error('Failed to update profile. Please try again.');
+      throw new Error(error.message || 'Failed to update profile. Please try again.');
     }
   };
 
@@ -146,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.code === 'auth/wrong-password') {
         throw new Error('Current password is incorrect');
       }
-      throw new Error('Failed to change password. Please try again.');
+      throw new Error(error.message || 'Failed to change password. Please try again.');
     }
   };
 

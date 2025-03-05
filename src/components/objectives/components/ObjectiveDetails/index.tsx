@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import type { Objective, KPI, User } from '../../../../types';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { kpiService } from '../../../../services/kpiService';
 import { objectiveService } from '../../../../services/objectiveService';
 import { userService } from '../../../../services/userService';
-import { useAuth } from '../../../../contexts/AuthContext';
 import KPILinkModal from '../KPILinkModal';
 import ProgressUpdateModal from '../ProgressUpdateModal';
 import Header from './Header';
@@ -13,11 +12,13 @@ import Contributors from './Contributors';
 import Actions from './Actions';
 import History from './History';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import type { Objective, KPI, User } from '../../../../types';
 
 interface ObjectiveDetailsProps {
   objective: Objective;
   onEdit: () => void;
   onArchive: () => void;
+  onDelete: () => void;
   onLinkKPI: (kpiId: string) => Promise<void>;
   onUnlinkKPI: (kpiId: string) => Promise<void>;
 }
@@ -26,6 +27,7 @@ export default function ObjectiveDetails({
   objective, 
   onEdit,
   onArchive,
+  onDelete,
   onLinkKPI,
   onUnlinkKPI
 }: ObjectiveDetailsProps) {
@@ -34,8 +36,6 @@ export default function ObjectiveDetails({
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [linkedKPIs, setLinkedKPIs] = useState<KPI[]>([]);
   const [contributors, setContributors] = useState<User[]>([]);
-  const [childObjectives, setChildObjectives] = useState<Objective[]>([]);
-  const [childContributors, setChildContributors] = useState<Map<string, User[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadingContributors, setLoadingContributors] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +46,8 @@ export default function ObjectiveDetails({
     if (objective?.id) {
       fetchLinkedKPIs();
       fetchContributors();
-      if (objective.level === 'company') {
-        fetchChildObjectives();
-      }
     }
-  }, [objective?.id, objective?.kpiIds, objective?.contributors]);
+  }, [objective?.id]);
 
   const fetchLinkedKPIs = async () => {
     try {
@@ -88,128 +85,18 @@ export default function ObjectiveDetails({
     }
   };
 
-  const fetchChildObjectives = async () => {
-    try {
-      const objectives = await objectiveService.getObjectives();
-      const children = objectives.filter(obj => obj.parentId === objective.id);
-      setChildObjectives(children);
-
-      // Fetch contributors for each child objective
-      const contributorsMap = new Map<string, User[]>();
-      await Promise.all(
-        children.map(async (child) => {
-          if (child.contributors?.length) {
-            const users = await Promise.all(
-              child.contributors.map(userId => userService.getUser(userId))
-            );
-            contributorsMap.set(child.id, users);
-          }
-        })
-      );
-      setChildContributors(contributorsMap);
-    } catch (err) {
-      console.error('Error fetching child objectives:', err);
-      setError('Failed to load child objectives');
-    }
-  };
-
-  const handleLinkKPI = async (kpiId: string) => {
-    try {
-      await objectiveService.linkKPI(objective.id, kpiId);
-      await fetchLinkedKPIs();
-      onLinkKPI(kpiId);
-    } catch (err) {
-      console.error('Error linking KPI:', err);
-      setError('Failed to link KPI');
-      throw err;
-    }
-  };
-
-  const handleUnlinkKPI = async (kpiId: string) => {
-    try {
-      await objectiveService.unlinkKPI(objective.id, kpiId);
-      await fetchLinkedKPIs();
-      onUnlinkKPI(kpiId);
-    } catch (err) {
-      console.error('Error unlinking KPI:', err);
-      setError('Failed to unlink KPI');
-      throw err;
-    }
-  };
-
-  const handleUpdateKPI = async (kpiId: string, value: number, comment: string) => {
-    try {
-      const kpi = linkedKPIs.find(k => k.id === kpiId);
-      if (!kpi) return;
-
-      const updatedKpi = {
-        ...kpi,
-        value,
-        progress: Math.min(100, Math.round((value / kpi.target) * 100)),
-        trend: value > kpi.value ? 'up' : value < kpi.value ? 'down' : 'stable',
-        status: value >= kpi.target ? 'on-track' : value >= kpi.target * 0.7 ? 'at-risk' : 'behind',
-        lastUpdated: new Date().toISOString(),
-        history: [
-          ...(kpi.history || []),
-          {
-            value,
-            comment,
-            timestamp: new Date().toISOString()
-          }
-        ]
-      };
-
-      await kpiService.updateKPI(kpiId, updatedKpi);
-      setLinkedKPIs(prev => prev.map(k => k.id === kpiId ? updatedKpi : k));
-
-      // Update objective progress
-      await handleUpdate();
-    } catch (err) {
-      console.error('Error updating KPI:', err);
-      setError('Failed to update KPI');
-      throw err;
-    }
-  };
-
   const handleUpdate = async () => {
     try {
       setUpdating(true);
       setError(null);
       const newProgress = await objectiveService.calculateProgress(objective.id);
       objective.progress = newProgress;
-      await fetchLinkedKPIs();
-    } catch (err) {
-      console.error('Error updating objective progress:', err);
-      setError('Failed to update objective progress');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleProgressUpdate = async (progress: number, comment: string) => {
-    try {
-      setUpdating(true);
-      setError(null);
-      
-      await objectiveService.updateObjective(objective.id, {
-        progress,
-        status: progress >= 90 ? 'on-track' : progress >= 60 ? 'at-risk' : 'behind',
-        history: [
-          ...(objective.history || []),
-          {
-            progress,
-            comment,
-            timestamp: new Date().toISOString()
-          }
-        ]
-      });
-
-      objective.progress = progress;
       setShowProgressModal(false);
+      setSuccess('Progress updated successfully');
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Error updating objective progress:', err);
       setError('Failed to update objective progress');
-      throw err;
     } finally {
       setUpdating(false);
     }
@@ -251,22 +138,13 @@ export default function ObjectiveDetails({
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">Contributors</h3>
-            {objective.level === 'company' ? (
-              <span className="text-sm text-gray-500">
-                {Array.from(childContributors.values()).reduce((total, users) => total + users.length, 0) + contributors.length} total contributors
-              </span>
-            ) : (
-              <span className="text-sm text-gray-500">
-                {contributors.length} member{contributors.length !== 1 ? 's' : ''}
-              </span>
-            )}
+            <span className="text-sm text-gray-500">
+              {contributors.length} member{contributors.length !== 1 ? 's' : ''}
+            </span>
           </div>
           <Contributors
             contributors={contributors}
-            childObjectives={childObjectives}
-            childContributors={childContributors}
             loading={loadingContributors}
-            isCompanyLevel={objective.level === 'company'}
           />
         </div>
 
@@ -274,9 +152,8 @@ export default function ObjectiveDetails({
         <LinkedKPIs
           linkedKPIs={linkedKPIs}
           loading={loading}
-          error={error}
-          onManageKPIs={() => setShowKPIModal(true)}
-          onUpdateKPI={handleUpdateKPI}
+          onUnlink={onUnlinkKPI}
+          canManage={!!user?.isAdmin}
         />
 
         {/* History Section */}
@@ -293,9 +170,11 @@ export default function ObjectiveDetails({
         <Actions
           onEdit={onEdit}
           onArchive={user?.isAdmin ? onArchive : undefined}
+          onDelete={user?.role === 'superadmin' ? onDelete : undefined}
           onUpdate={() => setShowProgressModal(true)}
           updating={updating}
           isAdmin={!!user?.isAdmin}
+          isSuperAdmin={user?.role === 'superadmin'}
         />
       </div>
 
@@ -304,8 +183,8 @@ export default function ObjectiveDetails({
           objectiveId={objective.id}
           linkedKPIs={linkedKPIs}
           onClose={() => setShowKPIModal(false)}
-          onLink={handleLinkKPI}
-          onUnlink={handleUnlinkKPI}
+          onLink={onLinkKPI}
+          onUnlink={onUnlinkKPI}
         />
       )}
 
@@ -313,7 +192,7 @@ export default function ObjectiveDetails({
         <ProgressUpdateModal
           objective={objective}
           onClose={() => setShowProgressModal(false)}
-          onUpdate={handleProgressUpdate}
+          onUpdate={handleUpdate}
         />
       )}
     </div>

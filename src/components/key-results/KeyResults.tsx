@@ -7,7 +7,7 @@ import KPIForm from '../kpis/components/KPIForm/index';
 import ViewToggle from '../kpis/components/ViewToggle';
 import { userService } from '../../services/userService';
 import { useAuth } from '../../contexts/AuthContext';
-import { AlertTriangle, Plus, Search, Filter } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Filter, Users } from 'lucide-react';
 import type { KPI, User } from '../../types';
 
 function KeyResults() {
@@ -21,6 +21,7 @@ function KeyResults() {
   const [editingKpi, setEditingKpi] = useState<KPI | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [filterContributor, setFilterContributor] = useState('all');
   const [kpiContributors, setKpiContributors] = useState<Map<string, User[]>>(new Map());
   const [view, setView] = useState<'grid' | 'list'>('list');
 
@@ -98,7 +99,6 @@ function KeyResults() {
   };
 
   const handleDeleteKpi = async (id: string) => {
-    // Check if user is admin
     if (!user?.isAdmin) {
       setError('Only administrators can delete key results');
       return;
@@ -155,10 +155,12 @@ function KeyResults() {
       kpi.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       kpi.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || kpi.category === filterCategory;
-    return matchesSearch && matchesCategory;
+    const matchesContributor = filterContributor === 'all' || kpi.contributors?.includes(filterContributor);
+    return matchesSearch && matchesCategory && matchesContributor;
   });
 
   const categories = Array.from(new Set(kpis.map(kpi => kpi.category)));
+  const contributors = Array.from(new Set(kpis.flatMap(kpi => kpi.contributors || [])));
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -219,6 +221,18 @@ function KeyResults() {
                 <option value="all">All Categories</option>
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <select
+                value={filterContributor}
+                onChange={(e) => setFilterContributor(e.target.value)}
+                className="block rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="all">All Contributors</option>
+                {users.filter(u => contributors.includes(u.id)).map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.displayName || user.email}
+                  </option>
                 ))}
               </select>
             </div>

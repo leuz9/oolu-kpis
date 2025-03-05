@@ -20,8 +20,7 @@ export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: Ke
     progress: 0
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdd = () => {
     if (!newKeyResult.title || !newKeyResult.target) return;
 
     onAdd({
@@ -119,7 +118,7 @@ export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: Ke
       {/* Add Key Result Form */}
       {showAddForm && (
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Title</label>
               <input
@@ -128,7 +127,6 @@ export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: Ke
                 onChange={(e) => setNewKeyResult({ ...newKeyResult, title: e.target.value })}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 placeholder="e.g., Increase customer satisfaction score"
-                required
               />
             </div>
 
@@ -140,7 +138,6 @@ export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: Ke
                   value={newKeyResult.startValue}
                   onChange={(e) => setNewKeyResult({ ...newKeyResult, startValue: parseFloat(e.target.value) })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  required
                 />
               </div>
               <div>
@@ -150,7 +147,6 @@ export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: Ke
                   value={newKeyResult.target}
                   onChange={(e) => setNewKeyResult({ ...newKeyResult, target: parseFloat(e.target.value) })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  required
                 />
               </div>
               <div>
@@ -161,7 +157,6 @@ export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: Ke
                   onChange={(e) => setNewKeyResult({ ...newKeyResult, unit: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                   placeholder="%, pts, $, etc."
-                  required
                 />
               </div>
             </div>
@@ -175,13 +170,14 @@ export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: Ke
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={handleAdd}
                 className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
               >
                 Add Key Result
               </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
     </div>

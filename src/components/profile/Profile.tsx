@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { departmentService } from '../../services/departmentService';
 import { 
   Camera, 
   Save, 
@@ -18,58 +20,16 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import Sidebar from '../Sidebar';
-
-// Comprehensive list of departments
-const DEPARTMENTS = [
-  'Executive',
-  'Finance',
-  'Human Resources',
-  'Information Technology',
-  'Marketing',
-  'Operations',
-  'Research & Development',
-  'Sales',
-  'Customer Service',
-  'Legal',
-  'Product Management',
-  'Engineering',
-  'Quality Assurance',
-  'Business Development',
-  'Public Relations',
-  'Supply Chain',
-  'Administration',
-  'Project Management',
-  'Data Analytics',
-  'Design',
-  'Content',
-  'Training & Development',
-  'Compliance',
-  'Risk Management',
-  'Facilities',
-  'Security',
-  'Innovation',
-  'Strategy',
-  'Consulting',
-  'Customer Success',
-  'Technical Support',
-  'Infrastructure',
-  'Communications',
-  'Procurement',
-  'Logistics',
-  'Manufacturing',
-  'Production',
-  'Maintenance',
-  'Health & Safety',
-  'Environmental',
-  'Corporate Services'
-].sort();
+import type { Department } from '../../types';
 
 export default function Profile() {
-  const { user, updateUserProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
+  const { user, updateUserProfile } = useAuth();
   const [formData, setFormData] = useState({
     displayName: user?.displayName || '',
     email: user?.email || '',
@@ -92,6 +52,23 @@ export default function Profile() {
       website: ''
     }
   });
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      setLoadingDepartments(true);
+      const fetchedDepartments = await departmentService.getDepartments();
+      setDepartments(fetchedDepartments);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+      setError('Failed to load departments');
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,18 +258,25 @@ export default function Profile() {
                       <div className="mt-1 flex items-center">
                         <Building2 className="h-5 w-5 text-gray-400 mr-2" />
                         {isEditing ? (
-                          <select
-                            value={formData.department}
-                            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                          >
-                            <option value="">Select Department</option>
-                            {DEPARTMENTS.map((dept) => (
-                              <option key={dept} value={dept}>
-                                {dept}
-                              </option>
-                            ))}
-                          </select>
+                          loadingDepartments ? (
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mr-2"></div>
+                              <span className="text-sm text-gray-500">Loading departments...</span>
+                            </div>
+                          ) : (
+                            <select
+                              value={formData.department}
+                              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                            >
+                              <option value="">Select Department</option>
+                              {departments.map((dept) => (
+                                <option key={dept.id} value={dept.name}>
+                                  {dept.name}
+                                </option>
+                              ))}
+                            </select>
+                          )
                         ) : (
                           <input
                             type="text"

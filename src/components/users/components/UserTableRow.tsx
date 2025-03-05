@@ -1,14 +1,5 @@
 import React from 'react';
-import { 
-  MoreVertical, 
-  Edit, 
-  Key, 
-  Link, 
-  Send, 
-  Lock, 
-  Eye, 
-  UserX 
-} from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 import { User } from '../../../types';
 import UserAvatar from './UserAvatar';
 import UserActions from './UserActions';
@@ -36,14 +27,19 @@ export default function UserTableRow({
   onPasswordReset,
   onLinkTeamMember
 }: UserTableRowProps) {
+  const isSuperadmin = user.role === 'superadmin';
+
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className={`hover:bg-gray-50 ${isSuperadmin ? 'bg-gray-50' : ''}`}>
       <td className="px-6 py-4">
         <input
           type="checkbox"
           checked={selected}
           onChange={() => onSelect(user.id)}
-          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          disabled={isSuperadmin}
+          className={`rounded border-gray-300 text-primary-600 focus:ring-primary-500 ${
+            isSuperadmin ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         />
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
@@ -52,6 +48,11 @@ export default function UserTableRow({
           <div className="ml-4">
             <div className="text-sm font-medium text-gray-900">
               {user.displayName}
+              {isSuperadmin && (
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  Superadmin
+                </span>
+              )}
             </div>
             <div className="text-sm text-gray-500">{user.email}</div>
           </div>
@@ -94,7 +95,10 @@ export default function UserTableRow({
         <div className="relative inline-block text-left">
           <button
             onClick={() => onShowActions(showActions ? null : user.id)}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+            className={`p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 ${
+              isSuperadmin ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={isSuperadmin}
           >
             <MoreVertical className="h-5 w-5" />
           </button>

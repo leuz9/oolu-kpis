@@ -50,38 +50,3 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     </div>
   );
 }
-
-const Navigation = ({ items, sidebarOpen, onNavigate }) => {
-  const location = useLocation();
-
-  return (
-    <nav className="flex-1 pt-4">
-      <div className="space-y-1">
-        {items.map((item) => (
-          <div
-            key={item.path}
-            onClick={() => onNavigate(item.path)}
-            className={`
-              flex items-center px-4 py-3 cursor-pointer
-              ${location.pathname === item.path ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
-              ${sidebarOpen ? 'justify-start' : 'justify-center'}
-              transition-all duration-200
-            `}
-          >
-            <div className={`${sidebarOpen ? '' : 'w-6'} flex items-center relative`}>
-              {React.cloneElement(item.icon, {
-                className: `h-5 w-5 ${location.pathname === item.path ? 'text-white' : 'text-current'}`
-              })}
-              {item.path === '/notifications' && <NotificationBadge />}
-            </div>
-            {sidebarOpen && (
-              <span className="ml-3 text-sm font-medium truncate">
-                {item.label}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-    </nav>
-  );
-};

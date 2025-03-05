@@ -28,9 +28,6 @@ export default function UserManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showActions, setShowActions] = useState<string | null>(null);
-  const [showPasswordReset, setShowPasswordReset] = useState<string | null>(null);
-  const [showLinkModal, setShowLinkModal] = useState(false);
-  const [selectedTeamMember, setSelectedTeamMember] = useState<any | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -51,88 +48,92 @@ export default function UserManagement() {
 
   const handleEditUser = async (userId: string, data: Partial<User>) => {
     try {
+      // Check if user is superadmin
+      const user = users.find(u => u.id === userId);
+      if (user?.role === 'superadmin') {
+        setError('Cannot modify superadmin users');
+        return;
+      }
+
       await adminService.updateUser(userId, data);
       setUsers(prev => prev.map(user => 
         user.id === userId ? { ...user, ...data } : user
       ));
       setSuccess('User updated successfully');
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError('Failed to update user. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update user. Please try again.');
       console.error('Error updating user:', err);
-      throw err;
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
     try {
+      // Check if user is superadmin
+      const user = users.find(u => u.id === userId);
+      if (user?.role === 'superadmin') {
+        setError('Cannot delete superadmin users');
+        return;
+      }
+
       await adminService.deleteUser(userId);
       setUsers(prev => prev.filter(user => user.id !== userId));
       setShowDeleteConfirm(null);
       setSuccess('User deleted successfully');
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError('Failed to delete user. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete user. Please try again.');
       console.error('Error deleting user:', err);
     }
   };
 
   const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
     try {
+      // Filter out superadmin users from selection
+      const selectedNonSuperadmins = Array.from(selectedUsers).filter(userId => {
+        const user = users.find(u => u.id === userId);
+        return user?.role !== 'superadmin';
+      });
+
+      if (selectedNonSuperadmins.length !== selectedUsers.size) {
+        setError('Cannot perform actions on superadmin users. They have been excluded from the selection.');
+      }
+
+      if (selectedNonSuperadmins.length === 0) {
+        return;
+      }
+
       switch (action) {
         case 'activate':
           await Promise.all(
-            Array.from(selectedUsers).map(userId =>
+            selectedNonSuperadmins.map(userId =>
               adminService.updateUser(userId, { status: 'active' })
             )
           );
-          setSuccess(`Successfully activated ${selectedUsers.size} users`);
+          setSuccess(`Successfully activated ${selectedNonSuperadmins.length} users`);
           break;
         case 'deactivate':
           await Promise.all(
-            Array.from(selectedUsers).map(userId =>
+            selectedNonSuperadmins.map(userId =>
               adminService.updateUser(userId, { status: 'inactive' })
             )
           );
-          setSuccess(`Successfully deactivated ${selectedUsers.size} users`);
+          setSuccess(`Successfully deactivated ${selectedNonSuperadmins.length} users`);
           break;
         case 'delete':
-          if (window.confirm(`Are you sure you want to delete ${selectedUsers.size} users?`)) {
+          if (window.confirm(`Are you sure you want to delete ${selectedNonSuperadmins.length} users?`)) {
             await Promise.all(
-              Array.from(selectedUsers).map(userId => adminService.deleteUser(userId))
+              selectedNonSuperadmins.map(userId => adminService.deleteUser(userId))
             );
-            setSuccess(`Successfully deleted ${selectedUsers.size} users`);
+            setSuccess(`Successfully deleted ${selectedNonSuperadmins.length} users`);
           }
           break;
       }
       setSelectedUsers(new Set());
       fetchUsers();
-    } catch (err) {
-      setError('Failed to perform bulk action. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to perform bulk action. Please try again.');
       console.error('Error performing bulk action:', err);
-    }
-  };
-
-  const handlePasswordReset = async (userId: string) => {
-    try {
-      // Implement password reset logic here
-      setSuccess('Password reset email sent successfully');
-      setShowPasswordReset(null);
-    } catch (err) {
-      setError('Failed to send password reset email');
-      console.error('Error sending password reset:', err);
-    }
-  };
-
-  const handleLinkTeamMember = async (user: User) => {
-    try {
-      // Implement team member linking logic here
-      setSuccess('Team member linked successfully');
-      setShowLinkModal(false);
-      setSelectedTeamMember(null);
-    } catch (err) {
-      setError('Failed to link team member');
-      console.error('Error linking team member:', err);
     }
   };
 
@@ -239,6 +240,11 @@ export default function UserManagement() {
               users={filteredUsers}
               selectedUsers={selectedUsers}
               onSelectUser={(userId) => {
+                const user = users.find(u => u.id === userId);
+                if (user?.role === 'superadmin') {
+                  setError('Cannot select superadmin users');
+                  return;
+                }
                 const newSelected = new Set(selectedUsers);
                 if (newSelected.has(userId)) {
                   newSelected.delete(userId);
@@ -248,16 +254,36 @@ export default function UserManagement() {
                 setSelectedUsers(newSelected);
               }}
               onSelectAll={(selected) => {
-                setSelectedUsers(selected ? new Set(filteredUsers.map(u => u.id)) : new Set());
+                // Filter out superadmin users when selecting all
+                const selectableUsers = filteredUsers.filter(u => u.role !== 'superadmin');
+                setSelectedUsers(selected ? new Set(selectableUsers.map(u => u.id)) : new Set());
               }}
               showActions={showActions}
               onShowActions={setShowActions}
               onEdit={setEditingUser}
-              onDelete={(userId) => setShowDeleteConfirm(userId)}
-              onPasswordReset={(userId) => setShowPasswordReset(userId)}
+              onDelete={(userId) => {
+                const user = users.find(u => u.id === userId);
+                if (user?.role === 'superadmin') {
+                  setError('Cannot delete superadmin users');
+                  return;
+                }
+                setShowDeleteConfirm(userId);
+              }}
+              onPasswordReset={(userId) => {
+                const user = users.find(u => u.id === userId);
+                if (user?.role === 'superadmin') {
+                  setError('Cannot reset password for superadmin users');
+                  return;
+                }
+                // Implement password reset logic
+              }}
               onLinkTeamMember={(user) => {
+                if (user.role === 'superadmin') {
+                  setError('Cannot modify superadmin users');
+                  return;
+                }
                 setEditingUser(user);
-                setShowLinkModal(true);
+                // Implement team member linking logic
               }}
             />
           )}

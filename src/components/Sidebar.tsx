@@ -37,6 +37,7 @@ interface MenuItem {
   label: string;
   path: string;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
 }
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
@@ -48,10 +49,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     // Main Menu
     { icon: <Home />, label: 'Dashboard', path: '/' },
     { icon: <Target />, label: 'Objectives', path: '/objectives' },
-    { icon: <PieChart />, label: 'Key Results', path: '/key-results' },
+    { icon: <PieChart />, label: 'Key Results', path: '/key-results', superAdminOnly: true },
     { icon: <Users />, label: 'Team', path: '/team' },
-    { icon: <Briefcase />, label: 'Projects', path: '/projects' },
-    { icon: <Book />, label: 'Documentation', path: '/documentation' },
+    { icon: <Briefcase />, label: 'Projects', path: '/projects', superAdminOnly: true },
+    { icon: <Book />, label: 'Documentation', path: '/documentation', superAdminOnly: true },
     { icon: <Bell />, label: 'Notifications', path: '/notifications' },
     
     // Admin Only Menus
@@ -80,7 +81,16 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     }
   };
 
-  const filteredMenuItems = menuItems.filter(item => !item.adminOnly || user?.isAdmin);
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter(item => {
+    if (item.superAdminOnly) {
+      return user?.role === 'superadmin';
+    }
+    if (item.adminOnly) {
+      return user?.isAdmin;
+    }
+    return true;
+  });
 
   return (
     <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 shadow-lg transition-all duration-300 ease-in-out flex flex-col fixed h-full overflow-y-auto`}>

@@ -97,19 +97,6 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'on-track':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case 'at-risk':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      case 'behind':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return null;
-    }
-  };
-
   const calculateOverallProgress = () => {
     if (!objectives.length) return 0;
     return Math.round(objectives.reduce((sum, obj) => sum + obj.progress, 0) / objectives.length);

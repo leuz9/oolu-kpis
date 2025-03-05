@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Target, Calendar, Building2, Users, TrendingUp, TrendingDown, Minus, AlertTriangle, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Target, Calendar, Building2, Users, TrendingUp } from 'lucide-react';
 import FormHeader from './FormHeader';
 import ErrorAlert from './ErrorAlert';
 import BasicInformation from './BasicInformation';
@@ -33,15 +33,12 @@ export default function Form({ onClose, onSubmit, initialData, availableUsers }:
     dueDate: '',
     history: [],
     objectiveIds: [],
-    owner: '',
-    department: '',
     contributors: []
   });
 
   const [customUnit, setCustomUnit] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,48 +231,6 @@ export default function Form({ onClose, onSubmit, initialData, availableUsers }:
               dueDate={formData.dueDate?.split('T')[0] || ''}
               onChange={(field, value) => setFormData({ ...formData, [field]: value })}
             />
-          </div>
-
-          {/* Advanced Settings */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center text-sm font-medium text-gray-700 hover:text-primary-600"
-            >
-              {showAdvanced ? (
-                <Minus className="h-4 w-4 mr-2" />
-              ) : (
-                <Plus className="h-4 w-4 mr-2" />
-              )}
-              Advanced Settings
-            </button>
-
-            {showAdvanced && (
-              <div className="space-y-4 pt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Owner</label>
-                  <input
-                    type="text"
-                    value={formData.owner || ''}
-                    onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                    placeholder="Key result owner"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Department</label>
-                  <input
-                    type="text"
-                    value={formData.department || ''}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                    placeholder="Responsible department"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Preview Section */}

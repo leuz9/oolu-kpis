@@ -8,6 +8,7 @@ interface ObjectiveDetailsModalProps {
   onClose: () => void;
   onEdit: () => void;
   onArchive: () => void;
+  onDelete: () => void;
   onLinkKPI: (kpiId: string) => Promise<void>;
   onUnlinkKPI: (kpiId: string) => Promise<void>;
 }
@@ -17,6 +18,7 @@ export default function ObjectiveDetailsModal({
   onClose,
   onEdit,
   onArchive,
+  onDelete,
   onLinkKPI,
   onUnlinkKPI
 }: ObjectiveDetailsModalProps) {
@@ -38,6 +40,7 @@ export default function ObjectiveDetailsModal({
             objective={objective}
             onEdit={onEdit}
             onArchive={onArchive}
+            onDelete={onDelete}
             onLinkKPI={onLinkKPI}
             onUnlinkKPI={onUnlinkKPI}
           />
