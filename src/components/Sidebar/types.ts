@@ -5,4 +5,5 @@ export interface MenuItem {
   label: string;
   path: string;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
 }

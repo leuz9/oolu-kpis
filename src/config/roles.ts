@@ -446,10 +446,18 @@ export function getRoleById(id: UserRole): Role {
 }
 
 export function hasPermission(role: UserRole, permission: keyof RolePermissions): boolean {
-  return ROLES[role].permissions[permission];
+  return ROLES[role]?.permissions[permission] || false;
 }
 
 export function canManageRole(managerRole: UserRole, targetRole: UserRole): boolean {
+  // Check if both roles exist
+  const manager = ROLES[managerRole];
+  const target = ROLES[targetRole];
+  
+  if (!manager || !target) {
+    return false;
+  }
+
   // A user can only manage roles of lower level than their own
-  return ROLES[managerRole].level < ROLES[targetRole].level;
+  return manager.level < target.level;
 }

@@ -32,7 +32,7 @@ export const menuItems: MenuItem[] = [
   { icon: MessageSquare, label: 'Messages', path: '/messages' },
   
   // Admin Only Menus
-  { icon: UserCog, label: 'User Management', path: '/users', adminOnly: true },
+  { icon: UserCog, label: 'User Management', path: '/users', superAdminOnly: true },
   { icon: BarChart3, label: 'Analytics', path: '/analytics', adminOnly: true },
   { icon: FileText, label: 'Reports', path: '/reports', adminOnly: true },
   { icon: Shield, label: 'Security', path: '/security', adminOnly: true },

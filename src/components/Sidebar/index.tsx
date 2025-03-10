@@ -29,7 +29,16 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     }
   };
 
-  const filteredMenuItems = menuItems.filter(item => !item.adminOnly || user?.isAdmin);
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter(item => {
+    if (item.superAdminOnly) {
+      return user?.role === 'superadmin';
+    }
+    if (item.adminOnly) {
+      return user?.isAdmin;
+    }
+    return true;
+  });
 
   return (
     <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 shadow-lg transition-all duration-300 ease-in-out flex flex-col fixed h-full overflow-y-auto`}>

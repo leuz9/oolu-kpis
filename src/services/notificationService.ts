@@ -276,3 +276,5 @@ export const notificationService = {
     }
   }
 };
+
+export { notificationService }

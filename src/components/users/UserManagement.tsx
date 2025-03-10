@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import { adminService } from '../../services/adminService';
+import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../AccessDenied';
 import { 
   UserCog, 
   AlertTriangle, 
@@ -15,6 +18,8 @@ import UserFilters from './components/UserFilters';
 import BulkActions from './components/BulkActions';
 
 export default function UserManagement() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +33,15 @@ export default function UserManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showActions, setShowActions] = useState<string | null>(null);
+
+  // Check if user has access
+  if (!user?.role || user.role !== 'superadmin') {
+    return (
+      <AccessDenied 
+        message="Only superadmin users can access the user management section. Please contact your administrator if you need access."
+      />
+    );
+  }
 
   useEffect(() => {
     fetchUsers();
@@ -48,13 +62,6 @@ export default function UserManagement() {
 
   const handleEditUser = async (userId: string, data: Partial<User>) => {
     try {
-      // Check if user is superadmin
-      const user = users.find(u => u.id === userId);
-      if (user?.role === 'superadmin') {
-        setError('Cannot modify superadmin users');
-        return;
-      }
-
       await adminService.updateUser(userId, data);
       setUsers(prev => prev.map(user => 
         user.id === userId ? { ...user, ...data } : user
@@ -69,13 +76,6 @@ export default function UserManagement() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      // Check if user is superadmin
-      const user = users.find(u => u.id === userId);
-      if (user?.role === 'superadmin') {
-        setError('Cannot delete superadmin users');
-        return;
-      }
-
       await adminService.deleteUser(userId);
       setUsers(prev => prev.filter(user => user.id !== userId));
       setShowDeleteConfirm(null);
