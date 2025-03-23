@@ -1,42 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { kpiService } from '../../../../services/kpiService';
 import { objectiveService } from '../../../../services/objectiveService';
 import { userService } from '../../../../services/userService';
-import KPILinkModal from '../KPILinkModal';
 import ProgressUpdateModal from '../ProgressUpdateModal';
 import Header from './Header';
 import Metrics from './Metrics';
-import LinkedKPIs from './LinkedKPIs';
 import Contributors from './Contributors';
+import KeyResults from './KeyResults';
 import Actions from './Actions';
 import History from './History';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
-import type { Objective, KPI, User } from '../../../../types';
+import type { Objective, User } from '../../../../types';
 
 interface ObjectiveDetailsProps {
   objective: Objective;
   onEdit: () => void;
   onArchive: () => void;
   onDelete: () => void;
-  onLinkKPI: (kpiId: string) => Promise<void>;
-  onUnlinkKPI: (kpiId: string) => Promise<void>;
 }
 
 export default function ObjectiveDetails({ 
   objective, 
   onEdit,
   onArchive,
-  onDelete,
-  onLinkKPI,
-  onUnlinkKPI
+  onDelete
 }: ObjectiveDetailsProps) {
   const { user } = useAuth();
-  const [showKPIModal, setShowKPIModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [linkedKPIs, setLinkedKPIs] = useState<KPI[]>([]);
   const [contributors, setContributors] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadingContributors, setLoadingContributors] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -44,27 +35,9 @@ export default function ObjectiveDetails({
 
   useEffect(() => {
     if (objective?.id) {
-      fetchLinkedKPIs();
       fetchContributors();
     }
   }, [objective?.id]);
-
-  const fetchLinkedKPIs = async () => {
-    try {
-      setLoading(true);
-      if (objective.kpiIds?.length > 0) {
-        const kpis = await kpiService.getKPIsByObjective(objective.id);
-        setLinkedKPIs(kpis);
-      } else {
-        setLinkedKPIs([]);
-      }
-    } catch (err) {
-      console.error('Error fetching linked KPIs:', err);
-      setError('Failed to load KPIs');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchContributors = async () => {
     try {
@@ -148,13 +121,13 @@ export default function ObjectiveDetails({
           />
         </div>
 
-        {/* KPIs Section */}
-        <LinkedKPIs
-          linkedKPIs={linkedKPIs}
-          loading={loading}
-          onUnlink={onUnlinkKPI}
-          canManage={!!user?.isAdmin}
-        />
+        {/* Key Results Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Key Results</h3>
+          </div>
+          <KeyResults keyResults={objective.keyResults || []} />
+        </div>
 
         {/* History Section */}
         <div className="mt-8">
@@ -177,16 +150,6 @@ export default function ObjectiveDetails({
           isSuperAdmin={user?.role === 'superadmin'}
         />
       </div>
-
-      {showKPIModal && (
-        <KPILinkModal
-          objectiveId={objective.id}
-          linkedKPIs={linkedKPIs}
-          onClose={() => setShowKPIModal(false)}
-          onLink={onLinkKPI}
-          onUnlink={onUnlinkKPI}
-        />
-      )}
 
       {showProgressModal && (
         <ProgressUpdateModal

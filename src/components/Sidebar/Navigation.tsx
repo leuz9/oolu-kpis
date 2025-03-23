@@ -1,16 +1,24 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import MenuItem from './MenuItem';
 import type { MenuItem as MenuItemType } from './types';
 
 interface NavigationProps {
   items: MenuItemType[];
   sidebarOpen: boolean;
-  onNavigate: (path: string) => void;
+  currentPath: string;
 }
 
-export default function Navigation({ items, sidebarOpen, onNavigate }: NavigationProps) {
-  const location = useLocation();
+export default function Navigation({ items, sidebarOpen, currentPath }: NavigationProps) {
+  const navigate = useNavigate();
+
+  const handleClick = (item: MenuItemType) => {
+    if (item.external) {
+      window.open(item.path, '_blank');
+    } else {
+      navigate(item.path);
+    }
+  };
 
   return (
     <nav className="flex-1 pt-4">
@@ -20,9 +28,9 @@ export default function Navigation({ items, sidebarOpen, onNavigate }: Navigatio
             key={item.path}
             icon={item.icon}
             label={item.label}
-            isActive={location.pathname === item.path}
+            isActive={!item.external && currentPath === item.path}
             sidebarOpen={sidebarOpen}
-            onClick={() => onNavigate(item.path)}
+            onClick={() => handleClick(item)}
           />
         ))}
       </div>

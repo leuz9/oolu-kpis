@@ -1,22 +1,42 @@
-// Add these interfaces to your existing types.ts file
+// Add new type for event reports
+export interface EventReport {
+  id: string;
+  eventId: string;
+  title: string;
+  content: string;
+  attendees: string[];
+  decisions: string[];
+  actionItems: Array<{
+    id: string;
+    description: string;
+    assignee?: string;
+    dueDate?: string;
+    status: 'pending' | 'completed';
+  }>;
+  attachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+  }>;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-export interface UserSettings {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    desktop: boolean;
-    objectives: boolean;
-    kpis: boolean;
-    projects: boolean;
-    team: boolean;
-  };
-  theme: {
-    mode: 'light' | 'dark';
-    primaryColor: string;
-    sidebarCollapsed: boolean;
-  };
-  language: string;
-  timezone: string;
-  dateFormat: string;
-  timeFormat: '12h' | '24h';
+// Update Event interface to include report
+export interface Event {
+  id: string;
+  title: string;
+  type: 'meeting' | 'deadline' | 'milestone' | 'review' | 'training';
+  start: string;
+  end: string;
+  description: string;
+  participants: string[];
+  location?: string;
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  project?: string;
+  resources?: string[];
+  report?: EventReport;
 }

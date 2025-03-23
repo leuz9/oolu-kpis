@@ -2,10 +2,9 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Logo from './Logo';
-import Navigation from './Navigation';
-import UserSection from './UserSection';
-import NotificationBadge from '../notifications/NotificationBadge';
+import MenuItem from './MenuItem';
 import { menuItems } from './menuItems';
+import { User, Settings, LogOut } from 'lucide-react';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -14,20 +13,8 @@ interface SidebarProps {
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Failed to log out:', error);
-    }
-  };
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter(item => {
@@ -40,22 +27,68 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     return true;
   });
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
+  };
+
   return (
     <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 shadow-lg transition-all duration-300 ease-in-out flex flex-col fixed h-full overflow-y-auto`}>
       <Logo sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <Navigation
-        items={filteredMenuItems}
-        sidebarOpen={sidebarOpen}
-        onNavigate={handleNavigation}
-      />
+      {/* Main Navigation */}
+      <nav className="flex-1 pt-4">
+        <div className="space-y-1">
+          {filteredMenuItems.map((item) => (
+            <MenuItem
+              key={item.path}
+              icon={item.icon}
+              label={item.label}
+              isActive={location.pathname === item.path}
+              sidebarOpen={sidebarOpen}
+              onClick={() => navigate(item.path)}
+            />
+          ))}
+        </div>
+      </nav>
 
-      <UserSection
-        user={user}
-        sidebarOpen={sidebarOpen}
-        onNavigate={handleNavigation}
-        onLogout={handleLogout}
-      />
+      {/* User Section */}
+      {user && (
+        <div className="border-t border-gray-800 p-4">
+          <div className="space-y-2">
+            {/* Profile Link */}
+            <MenuItem
+              icon={User}
+              label={user.displayName || user.email}
+              isActive={location.pathname === '/profile'}
+              sidebarOpen={sidebarOpen}
+              onClick={() => navigate('/profile')}
+            />
+
+            {/* Settings Link */}
+            <MenuItem
+              icon={Settings}
+              label="Settings"
+              isActive={location.pathname === '/settings'}
+              sidebarOpen={sidebarOpen}
+              onClick={() => navigate('/settings')}
+            />
+
+            {/* Logout Button */}
+            <MenuItem
+              icon={LogOut}
+              label="Sign out"
+              isActive={false}
+              sidebarOpen={sidebarOpen}
+              onClick={handleLogout}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

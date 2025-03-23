@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Mail, Globe, MessageSquare, Target, PieChart, Users, Briefcase, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
 import { useAuth } from '../../contexts/AuthContext';
-import { notificationService } from '../../services/notificationService';
 import type { UserSettings } from '../../types';
 
 export default function NotificationSettings() {
@@ -24,7 +23,6 @@ export default function NotificationSettings() {
   useEffect(() => {
     if (user) {
       loadSettings();
-      initializeNotifications();
     }
   }, [user]);
 
@@ -38,15 +36,6 @@ export default function NotificationSettings() {
       setError('Failed to load notification settings');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const initializeNotifications = async () => {
-    try {
-      await notificationService.initializeFCM();
-    } catch (err) {
-      console.error('Error initializing notifications:', err);
-      // Don't show error to user as this is not critical
     }
   };
 

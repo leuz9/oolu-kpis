@@ -21,10 +21,13 @@ import {
   Target,
   Trash2,
   List,
-  LayoutGrid
+  LayoutGrid,
+  FileText
 } from 'lucide-react';
-import type { Event, Resource } from '../../types';
+import type { Event, Resource, EventReport } from '../../types';
 import CalendarView from './components/CalendarView';
+import EventReportForm from './components/EventReportForm';
+import EventReportView from './components/EventReportView';
 
 const sampleEvents: Event[] = [
   {
@@ -268,6 +271,9 @@ export default function Planning() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [showReportView, setShowReportView] = useState(false);
+  const [showActions, setShowActions] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -354,6 +360,83 @@ export default function Planning() {
     }
   };
 
+  const handleCreateReport = async (reportData: Omit<EventReport, 'id' | 'eventId' | 'createdBy' | 'createdAt' | 'updatedAt'>) => {
+    if (!selectedEvent) return;
+
+    try {
+      await planningService.createEventReport(selectedEvent.id, reportData);
+      setSuccess('Report created successfully');
+      setShowReportForm(false);
+      fetchData(); // Refresh events list
+    } catch (err) {
+      console.error('Error creating report:', err);
+      setError('Failed to create report');
+    }
+  };
+
+  const handleViewReport = (event: Event) => {
+    setSelectedEvent(event);
+    setShowReportView(true);
+  };
+
+  const renderEventCard = (event: Event) => (
+    <div
+      key={event.id}
+      className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {getEventTypeIcon(event.type)}
+            <div className="ml-4">
+              <h3 className="text-lg font-medium text-gray-900">{event.title}</h3>
+              <p className="mt-1 text-sm text-gray-500">{event.description}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
+              {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+            </span>
+            <div className="relative">
+              <button
+                onClick={() => setShowActions(showActions === event.id ? null : event.id)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <MoreVertical className="h-5 w-5 text-gray-500" />
+              </button>
+              {showActions === event.id && (
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="py-1">
+                    {event.report ? (
+                      <button
+                        onClick={() => handleViewReport(event)}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <FileText className="h-4 w-4 mr-3" />
+                        View Report
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setShowReportForm(true);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <FileText className="h-4 w-4 mr-3" />
+                        Create Report
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
@@ -400,7 +483,6 @@ export default function Planning() {
             </div>
           </div>
 
-          {/* Alerts */}
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
               <div className="flex">
@@ -423,7 +505,6 @@ export default function Planning() {
             </div>
           )}
 
-          {/* Filters */}
           <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -490,7 +571,6 @@ export default function Planning() {
             </div>
           </div>
 
-          {/* View Content */}
           {view === 'calendar' ? (
             <CalendarView
               events={events}
@@ -500,70 +580,46 @@ export default function Planning() {
             />
           ) : (
             <div className="grid grid-cols-1 gap-6">
-              {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-medium text-gray-900">{event.title}</h3>
-                          <span className="ml-2 text-sm text-gray-500">#{event.id}</span>
-                        </div>
-                        <p className="mt-1 text-sm text-gray-500">{event.description}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <select
-                          value={event.status}
-                          onChange={(e) => handleUpdateEventStatus(event.id, e.target.value as Event['status'])}
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}
-                        >
-                          <option value="scheduled">Scheduled</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(event.priority)}`}>
-                          {event.priority}
-                        </span>
-                        <button
-                          onClick={() => handleDeleteEvent(event.id)}
-                          className="p-1 text-gray-400 hover:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                      <div className="flex items-center space-x-4">
-                        <span>Type: {event.type}</span>
-                        {event.location && <span>Location: {event.location}</span>}
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <span>Start: {new Date(event.start).toLocaleString()}</span>
-                        <span>End: {new Date(event.end).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {events.map(renderEventCard)}
             </div>
           )}
         </div>
-      </div>
 
-      {showEventForm && (
-        <NewEventForm 
-          onClose={() => setShowEventForm(false)}
-          onSuccess={(message) => {
-            setSuccess(message);
-            fetchData(); // Refresh events list
-          }}
-          onError={(message) => setError(message)}
-        />
-      )}
+        {showEventForm && (
+          <NewEventForm 
+            onClose={() => setShowEventForm(false)}
+            onSuccess={(message) => {
+              setSuccess(message);
+              fetchData();
+            }}
+            onError={(message) => setError(message)}
+          />
+        )}
+
+        {showReportForm && selectedEvent && (
+          <EventReportForm
+            event={selectedEvent}
+            onSubmit={handleCreateReport}
+            onClose={() => {
+              setShowReportForm(false);
+              setSelectedEvent(null);
+            }}
+          />
+        )}
+
+        {showReportView && selectedEvent?.report && (
+          <EventReportView
+            report={selectedEvent.report}
+            onClose={() => {
+              setShowReportView(false);
+              setSelectedEvent(null);
+            }}
+            onPrint={() => window.print()}
+            onDownload={() => {/* Implement download logic */}}
+            onShare={() => {/* Implement share logic */}}
+          />
+        )}
+      </div>
     </div>
   );
 }

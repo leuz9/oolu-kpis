@@ -1,9 +1,10 @@
-import { ReactNode } from 'react';
+import { DivideIcon as LucideIcon } from 'lucide-react';
 
 export interface MenuItem {
-  icon: ReactNode;
+  icon: LucideIcon;
   label: string;
   path: string;
   adminOnly?: boolean;
   superAdminOnly?: boolean;
+  external?: boolean;
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react';
-import type { Objective } from '../../../types';
+import type { Objective, KeyResult } from '../../../types';
 
 interface ProgressUpdateModalProps {
   objective: Objective;
@@ -13,6 +13,12 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keyResultUpdates, setKeyResultUpdates] = useState<Record<string, number>>(
+    objective.keyResults?.reduce((acc, kr) => ({
+      ...acc,
+      [kr.id]: kr.current
+    }), {}) || {}
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +32,8 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
       await onUpdate(progress, comment);
       onClose();
     } catch (err) {
-      setError('Failed to update progress. Please try again.');
+      console.error('Error updating progress:', err);
+      setError('Failed to update progress');
     } finally {
       setLoading(false);
     }
@@ -36,9 +43,26 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
     setProgress(prev => Math.min(Math.max(prev + amount, 0), 100));
   };
 
+  const handleKeyResultUpdate = (keyResult: KeyResult, value: number) => {
+    setKeyResultUpdates(prev => ({
+      ...prev,
+      [keyResult.id]: value
+    }));
+
+    // Recalculate overall progress based on key results
+    if (objective.keyResults?.length) {
+      const totalProgress = objective.keyResults.reduce((sum, kr) => {
+        const currentValue = keyResultUpdates[kr.id] || kr.current;
+        return sum + (currentValue / kr.target) * 100;
+      }, 0);
+      const averageProgress = Math.round(totalProgress / objective.keyResults.length);
+      setProgress(averageProgress);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium text-gray-900">Update Progress</h3>
           <button
@@ -56,9 +80,55 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Key Results Progress */}
+          {objective.keyResults && objective.keyResults.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Key Results Progress</h4>
+              <div className="space-y-4">
+                {objective.keyResults.map((keyResult) => (
+                  <div key={keyResult.id} className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">{keyResult.title}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-500">
+                          Current: {keyResult.current} / {keyResult.target} {keyResult.unit}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <input
+                        type="number"
+                        value={keyResultUpdates[keyResult.id] || keyResult.current}
+                        onChange={(e) => handleKeyResultUpdate(keyResult, parseFloat(e.target.value))}
+                        className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      />
+                      <div className="flex items-center text-sm">
+                        {(keyResultUpdates[keyResult.id] || keyResult.current) > keyResult.current ? (
+                          <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        ) : (keyResultUpdates[keyResult.id] || keyResult.current) < keyResult.current ? (
+                          <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                        ) : null}
+                        <span className={
+                          (keyResultUpdates[keyResult.id] || keyResult.current) > keyResult.current
+                            ? 'text-green-600'
+                            : (keyResultUpdates[keyResult.id] || keyResult.current) < keyResult.current
+                            ? 'text-red-600'
+                            : 'text-gray-600'
+                        }>
+                          {Math.abs((keyResultUpdates[keyResult.id] || keyResult.current) - keyResult.current)} {keyResult.unit}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Overall Progress */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Progress
+              Overall Progress
             </label>
             <div className="flex items-center space-x-4">
               <button
@@ -111,14 +181,14 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700">
               Update Comment
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               placeholder="Explain the reason for this progress update..."
               required
             />

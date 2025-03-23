@@ -9,7 +9,7 @@ interface KeyResultsProps {
   onUpdate: (index: number, keyResult: Partial<KeyResult>) => void;
 }
 
-export default function KeyResults({ keyResults, onAdd, onRemove, onUpdate }: KeyResultsProps) {
+export default function KeyResults({ keyResults = [], onAdd, onRemove, onUpdate }: KeyResultsProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newKeyResult, setNewKeyResult] = useState<Partial<KeyResult>>({
     title: '',

@@ -47,8 +47,17 @@ export interface Notification {
 // Internal helper functions
 const getFCMToken = async () => {
   try {
+    // Register service worker first
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/'
+      });
+      console.log('Service Worker registered with scope:', registration.scope);
+    }
+
     const token = await getToken(messaging, {
-      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: await navigator.serviceWorker.getRegistration()
     });
     
     if (!token) {
@@ -276,5 +285,3 @@ export const notificationService = {
     }
   }
 };
-
-export { notificationService }

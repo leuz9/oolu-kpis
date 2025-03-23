@@ -61,7 +61,7 @@ export default function Analytics() {
         <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
           <div className="max-w-7xl mx-auto">
             <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
-              <p className="text-red-700">{error}</p>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function Analytics() {
     {
       title: 'Objective Completion Rate',
       value: `${data.metrics.objectiveRate}%`,
-      change: 12, // You might want to calculate this from historical data
+      change: 12,
       trend: 'up' as const,
       period: `vs last ${selectedPeriod}`,
       icon: <Target className="h-6 w-6" />,

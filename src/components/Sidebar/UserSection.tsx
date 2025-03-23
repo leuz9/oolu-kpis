@@ -1,15 +1,18 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut } from 'lucide-react';
 import type { User as UserType } from '../../types';
 
 interface UserSectionProps {
   user: UserType | null;
   sidebarOpen: boolean;
-  onNavigate: (path: string) => void;
+  currentPath: string;
   onLogout: () => void;
 }
 
-export default function UserSection({ user, sidebarOpen, onNavigate, onLogout }: UserSectionProps) {
+export default function UserSection({ user, sidebarOpen, currentPath, onLogout }: UserSectionProps) {
+  const navigate = useNavigate();
+
   if (!user) return null;
 
   return (
@@ -17,8 +20,12 @@ export default function UserSection({ user, sidebarOpen, onNavigate, onLogout }:
       <div className="space-y-2">
         {/* Profile Link */}
         <div
-          onClick={() => onNavigate('/profile')}
-          className="flex items-center px-4 py-3 cursor-pointer text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-all duration-200"
+          onClick={() => navigate('/profile')}
+          className={`
+            flex items-center px-4 py-3 cursor-pointer
+            ${currentPath === '/profile' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
+            rounded-lg transition-all duration-200
+          `}
         >
           <User className="h-5 w-5" />
           {sidebarOpen && (
@@ -35,8 +42,12 @@ export default function UserSection({ user, sidebarOpen, onNavigate, onLogout }:
 
         {/* Settings Link */}
         <div
-          onClick={() => onNavigate('/settings')}
-          className="flex items-center px-4 py-3 cursor-pointer text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-all duration-200"
+          onClick={() => navigate('/settings')}
+          className={`
+            flex items-center px-4 py-3 cursor-pointer
+            ${currentPath === '/settings' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
+            rounded-lg transition-all duration-200
+          `}
         >
           <Settings className="h-5 w-5" />
           {sidebarOpen && (

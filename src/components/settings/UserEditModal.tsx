@@ -16,7 +16,12 @@ export default function UserEditModal({ user, onClose, onSave }: UserEditModalPr
     role: user.role || '',
     department: user.department || '',
     isAdmin: user.isAdmin || false,
-    status: user.status || 'active'
+    status: user.status || 'active',
+    phone: user.phone || '',
+    location: user.location || '',
+    jobTitle: user.jobTitle || '',
+    bio: user.bio || '',
+    managerId: user.managerId || ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +45,12 @@ export default function UserEditModal({ user, onClose, onSave }: UserEditModalPr
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-medium text-gray-900">Edit User</h3>
+      <div className="bg-white rounded-lg p-8 w-[80%] max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">Edit User</h3>
+            <p className="mt-1 text-sm text-gray-500">Update user information and permissions</p>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500"
@@ -52,7 +60,7 @@ export default function UserEditModal({ user, onClose, onSave }: UserEditModalPr
         </div>
 
         {error && (
-          <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
+          <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded">
             <div className="flex">
               <AlertTriangle className="h-5 w-5 text-red-400" />
               <p className="ml-3 text-sm text-red-700">{error}</p>
@@ -61,7 +69,7 @@ export default function UserEditModal({ user, onClose, onSave }: UserEditModalPr
         )}
 
         {success && (
-          <div className="mb-4 bg-green-50 border-l-4 border-green-400 p-4 rounded">
+          <div className="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded">
             <div className="flex">
               <CheckCircle2 className="h-5 w-5 text-green-400" />
               <p className="ml-3 text-sm text-green-700">{success}</p>
@@ -69,93 +77,171 @@ export default function UserEditModal({ user, onClose, onSave }: UserEditModalPr
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Display Name
-            </label>
-            <input
-              type="text"
-              value={formData.displayName}
-              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            />
+        <form onSubmit={handleSubmit}>
+          {/* Basic Information Section */}
+          <div className="mb-8">
+            <h4 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  disabled
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-50"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Email cannot be changed
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Job Title
+                </label>
+                <input
+                  type="text"
+                  value={formData.jobTitle}
+                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  placeholder="e.g., Senior Developer"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              disabled
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-50"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Email cannot be changed
-            </p>
+          {/* Role & Department Section */}
+          <div className="mb-8">
+            <h4 className="text-lg font-medium text-gray-900 mb-4">Role & Department</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Role
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                >
+                  <option value="">Select Role</option>
+                  {Object.values(ROLES).map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Role
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            >
-              <option value="">Select Role</option>
-              {Object.values(ROLES).map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
+          {/* Contact Information Section */}
+          <div className="mb-8">
+            <h4 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  placeholder="e.g., New York, USA"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Department
-            </label>
-            <input
-              type="text"
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            />
+          {/* Additional Information Section */}
+          <div className="mb-8">
+            <h4 className="text-lg font-medium text-gray-900 mb-4">Additional Information</h4>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Bio
+              </label>
+              <textarea
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                rows={4}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                placeholder="Brief description about the user"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="pending">Pending</option>
-            </select>
+          {/* Permissions Section */}
+          <div className="mb-8">
+            <h4 className="text-lg font-medium text-gray-900 mb-4">Permissions</h4>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isAdmin"
+                checked={formData.isAdmin}
+                onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isAdmin" className="ml-2 block text-sm text-gray-900">
+                Administrator Access
+              </label>
+            </div>
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isAdmin"
-              checked={formData.isAdmin}
-              onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isAdmin" className="ml-2 block text-sm text-gray-900">
-              Administrator Access
-            </label>
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-6 border-t">
             <button
               type="button"
               onClick={onClose}

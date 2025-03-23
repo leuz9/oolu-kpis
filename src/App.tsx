@@ -9,7 +9,9 @@ import Profile from './components/profile/Profile';
 import Objectives from './components/objectives/Objectives';
 import KeyResults from './components/key-results/KeyResults';
 import Team from './components/team/Team';
+import Directory from './components/directory/Directory';
 import Projects from './components/projects/Projects';
+import Tasks from './components/tasks/Tasks';
 import Settings from './components/settings/Settings';
 import Documentation from './components/documentation/Documentation';
 import UserManagement from './components/users/UserManagement';
@@ -19,7 +21,6 @@ import Notifications from './components/notifications/Notifications';
 import Security from './components/security/Security';
 import Departments from './components/departments/Departments';
 import Planning from './components/planning/Planning';
-import Messages from './components/messages/Messages';
 import Integrations from './components/integrations/Integrations';
 import API from './components/api/API';
 import Support from './components/support/Support';
@@ -64,6 +65,16 @@ function AppRoutes() {
         <Route path="/team" element={
           <PrivateRoute>
             <Team />
+          </PrivateRoute>
+        } />
+        <Route path="/directory" element={
+          <PrivateRoute>
+            <Directory />
+          </PrivateRoute>
+        } />
+        <Route path="/tasks" element={
+          <PrivateRoute>
+            <Tasks />
           </PrivateRoute>
         } />
         <Route path="/projects" element={
@@ -111,11 +122,6 @@ function AppRoutes() {
             <Planning />
           </PrivateRoute>
         } />
-        <Route path="/messages" element={
-          <PrivateRoute>
-            <Messages />
-          </PrivateRoute>
-        } />
         <Route path="/integrations" element={
           <PrivateRoute adminOnly>
             <Integrations />
@@ -124,11 +130,6 @@ function AppRoutes() {
         <Route path="/api" element={
           <PrivateRoute adminOnly>
             <API />
-          </PrivateRoute>
-        } />
-        <Route path="/support" element={
-          <PrivateRoute>
-            <Support />
           </PrivateRoute>
         } />
         <Route path="/settings" element={

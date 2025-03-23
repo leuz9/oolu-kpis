@@ -1,4 +1,5 @@
 import React from 'react';
+import { Building2 } from 'lucide-react';
 
 interface Department {
   name: string;
@@ -17,19 +18,6 @@ export default function DepartmentPerformance({
   selectedDepartment, 
   onDepartmentChange 
 }: DepartmentPerformanceProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'on-track':
-        return 'bg-green-100 text-green-800';
-      case 'at-risk':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'behind':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
@@ -51,7 +39,11 @@ export default function DepartmentPerformance({
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-gray-900">{dept.name}</span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(dept.status)}`}>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  dept.status === 'on-track' ? 'bg-green-100 text-green-800' :
+                  dept.status === 'at-risk' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
                   {dept.status.replace('-', ' ')}
                 </span>
               </div>

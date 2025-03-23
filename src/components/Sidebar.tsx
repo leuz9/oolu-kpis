@@ -6,24 +6,25 @@ import {
   PieChart, 
   Users, 
   Briefcase, 
-  Settings, 
-  Menu, 
-  X,
+  Book, 
+  Bell,
+  UserCog,
   BarChart3,
   FileText,
-  Bell,
   Shield,
   Building2,
   Calendar,
   MessageSquare,
-  HelpCircle,
-  FileCode,
-  Database,
-  UserCog,
-  Book,
   Link2,
+  Database,
+  FileCode,
+  CheckSquare,
+  User,
+  Settings,
   LogOut,
-  User
+  Menu,
+  X,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -32,54 +33,34 @@ interface SidebarProps {
   setSidebarOpen: (open: boolean) => void;
 }
 
-interface MenuItem {
-  icon: React.ReactNode;
-  label: string;
-  path: string;
-  adminOnly?: boolean;
-  superAdminOnly?: boolean;
-}
-
 export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const menuItems: MenuItem[] = [
+  const menuItems = [
     // Main Menu
-    { icon: <Home />, label: 'Dashboard', path: '/' },
-    { icon: <Target />, label: 'Objectives', path: '/objectives' },
-    { icon: <PieChart />, label: 'Key Results', path: '/key-results', superAdminOnly: true },
-    { icon: <Users />, label: 'Team', path: '/team' },
-    { icon: <Briefcase />, label: 'Projects', path: '/projects', superAdminOnly: true },
-    { icon: <Book />, label: 'Documentation', path: '/documentation', superAdminOnly: true },
-    { icon: <Bell />, label: 'Notifications', path: '/notifications' },
+    { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: Target, label: 'Objectives', path: '/objectives' },
+    { icon: BookOpen, label: 'Directory', path: '/directory' },
+    { icon: Users, label: 'Team', path: '/team' },
+    { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
+    { icon: Briefcase, label: 'Projects', path: '/projects', superAdminOnly: true },
+    { icon: Book, label: 'Documentation', path: '/documentation', superAdminOnly: true },
+    { icon: Bell, label: 'Notifications', path: '/notifications' },
     
     // Admin Only Menus
-    { icon: <UserCog />, label: 'User Management', path: '/users', adminOnly: true },
-    { icon: <BarChart3 />, label: 'Analytics', path: '/analytics', adminOnly: true },
-    { icon: <FileText />, label: 'Reports', path: '/reports', adminOnly: true },
-    { icon: <Shield />, label: 'Security', path: '/security', adminOnly: true },
-    { icon: <Building2 />, label: 'Departments', path: '/departments', adminOnly: true },
-    { icon: <Calendar />, label: 'Planning', path: '/planning' },
-    { icon: <MessageSquare />, label: 'Messages', path: '/messages' },
-    { icon: <Link2 />, label: 'Integrations', path: '/integrations', adminOnly: true },
-    { icon: <Database />, label: 'API', path: '/api', adminOnly: true },
-    { icon: <FileCode />, label: 'Support', path: '/support' }
+    { icon: UserCog, label: 'User Management', path: '/users', superAdminOnly: true },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics', adminOnly: true },
+    { icon: FileText, label: 'Reports', path: '/reports', adminOnly: true },
+    { icon: Shield, label: 'Security', path: '/security', adminOnly: true },
+    { icon: Building2, label: 'Departments', path: '/departments', adminOnly: true },
+    { icon: Calendar, label: 'Planning', path: '/planning' },
+    { icon: MessageSquare, label: 'Messages', path: 'https://mail.google.com/chat', external: true },
+    { icon: Link2, label: 'Integrations', path: '/integrations', adminOnly: true },
+    { icon: Database, label: 'API', path: '/api', adminOnly: true },
+    { icon: FileCode, label: 'Support', path: 'https://chat.google.com/room/AAAA3XV7nxY?cls=7', external: true }
   ];
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Failed to log out:', error);
-    }
-  };
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter(item => {
@@ -91,6 +72,23 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     }
     return true;
   });
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
+  };
+
+  const handleMenuItemClick = (path: string, external?: boolean) => {
+    if (external) {
+      window.open(path, '_blank');
+    } else {
+      navigate(path);
+    }
+  };
 
   return (
     <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 shadow-lg transition-all duration-300 ease-in-out flex flex-col fixed h-full overflow-y-auto`}>
@@ -113,39 +111,40 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
       <nav className="flex-1 pt-4">
         <div className="space-y-1">
-          {filteredMenuItems.map((item) => (
-            <div
-              key={item.path}
-              onClick={() => handleNavigation(item.path)}
-              className={`
-                flex items-center px-4 py-3 cursor-pointer
-                ${location.pathname === item.path ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
-                ${sidebarOpen ? 'justify-start' : 'justify-center'}
-                transition-all duration-200
-              `}
-            >
-              <div className={`${sidebarOpen ? '' : 'w-6'} flex items-center`}>
-                {React.cloneElement(item.icon as React.ReactElement, {
-                  className: `h-5 w-5 ${location.pathname === item.path ? 'text-white' : 'text-current'}`
-                })}
+          {filteredMenuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.path}
+                onClick={() => handleMenuItemClick(item.path, item.external)}
+                className={`
+                  flex items-center px-4 py-3 cursor-pointer
+                  ${location.pathname === item.path ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
+                  ${sidebarOpen ? 'justify-start' : 'justify-center'}
+                  transition-all duration-200
+                `}
+              >
+                <div className={`${sidebarOpen ? '' : 'w-6'} flex items-center`}>
+                  <Icon className={`h-5 w-5 ${location.pathname === item.path ? 'text-white' : 'text-current'}`} />
+                </div>
+                {sidebarOpen && (
+                  <span className="ml-3 text-sm font-medium truncate">
+                    {item.label}
+                  </span>
+                )}
               </div>
-              {sidebarOpen && (
-                <span className="ml-3 text-sm font-medium truncate">
-                  {item.label}
-                </span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </nav>
 
-      {/* User Profile and Settings */}
-      <div className="border-t border-gray-800 p-4">
-        {user && (
+      {/* User Section */}
+      {user && (
+        <div className="border-t border-gray-800 p-4">
           <div className="space-y-2">
             {/* Profile Link */}
             <div
-              onClick={() => handleNavigation('/profile')}
+              onClick={() => navigate('/profile')}
               className={`
                 flex items-center px-4 py-3 cursor-pointer
                 ${location.pathname === '/profile' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
@@ -167,7 +166,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
             {/* Settings Link */}
             <div
-              onClick={() => handleNavigation('/settings')}
+              onClick={() => navigate('/settings')}
               className={`
                 flex items-center px-4 py-3 cursor-pointer
                 ${location.pathname === '/settings' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
@@ -191,8 +190,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

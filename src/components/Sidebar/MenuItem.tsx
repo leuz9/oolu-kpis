@@ -1,14 +1,15 @@
 import React from 'react';
+import { DivideIcon as LucideIcon } from 'lucide-react';
 
 interface MenuItemProps {
-  icon: React.ReactNode;
+  icon: LucideIcon;
   label: string;
   isActive: boolean;
   sidebarOpen: boolean;
   onClick: () => void;
 }
 
-export default function MenuItem({ icon, label, isActive, sidebarOpen, onClick }: MenuItemProps) {
+export default function MenuItem({ icon: Icon, label, isActive, sidebarOpen, onClick }: MenuItemProps) {
   return (
     <div
       onClick={onClick}
@@ -20,9 +21,7 @@ export default function MenuItem({ icon, label, isActive, sidebarOpen, onClick }
       `}
     >
       <div className={`${sidebarOpen ? '' : 'w-6'} flex items-center`}>
-        {React.cloneElement(icon as React.ReactElement, {
-          className: `h-5 w-5 ${isActive ? 'text-white' : 'text-current'}`
-        })}
+        <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-current'}`} />
       </div>
       {sidebarOpen && (
         <span className="ml-3 text-sm font-medium truncate">
