@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Target, 
-  PieChart, 
+  Award, 
   Users, 
   Briefcase, 
   Book, 
@@ -42,6 +42,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     // Main Menu
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Target, label: 'Objectives', path: '/objectives' },
+  { icon: Award, label: 'Annual Appraisals', path: '/appraisals' },
     { icon: BookOpen, label: 'Directory', path: '/directory' },
     { icon: Users, label: 'Team', path: '/team' },
     { icon: CheckSquare, label: 'Tasks', path: '/tasks' },

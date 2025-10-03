@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Logo from './Logo';
 import MenuItem from './MenuItem';
 import { menuItems } from './menuItems';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { User, Settings, LogOut } from 'lucide-react';
 
 interface SidebarProps {
@@ -15,14 +16,15 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter(item => {
     if (item.superAdminOnly) {
-      return user?.role === 'superadmin';
+      return !!user?.isAdmin;
     }
     if (item.adminOnly) {
-      return user?.isAdmin;
+      return !!user?.isAdmin;
     }
     return true;
   });
@@ -43,16 +45,20 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
       {/* Main Navigation */}
       <nav className="flex-1 pt-4">
         <div className="space-y-1">
-          {filteredMenuItems.map((item) => (
-            <MenuItem
-              key={item.path}
-              icon={item.icon}
-              label={item.label}
-              isActive={location.pathname === item.path}
-              sidebarOpen={sidebarOpen}
-              onClick={() => navigate(item.path)}
-            />
-          ))}
+          {filteredMenuItems.map((item) => {
+            const badge = item.label === 'Notifications' ? unreadCount : undefined;
+            return (
+              <MenuItem
+                key={item.path}
+                icon={item.icon}
+                label={item.label}
+                isActive={location.pathname === item.path}
+                sidebarOpen={sidebarOpen}
+                onClick={() => navigate(item.path)}
+                badgeCount={badge}
+              />
+            );
+          })}
         </div>
       </nav>
 

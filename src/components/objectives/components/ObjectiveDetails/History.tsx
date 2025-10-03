@@ -6,7 +6,7 @@ interface HistoryProps {
   history?: Array<{
     progress: number;
     comment: string;
-    timestamp: string;
+    updatedAt: string;
     updatedBy?: string;
   }>;
   currentProgress: number;
@@ -38,7 +38,7 @@ export default function History({ history = [], currentProgress }: HistoryProps)
           const previousProgress = idx > 0 ? history[idx - 1].progress : 0;
           
           return (
-            <li key={update.timestamp}>
+            <li key={update.updatedAt}>
               <div className="relative pb-8">
                 {!isLast && (
                   <span
@@ -69,8 +69,8 @@ export default function History({ history = [], currentProgress }: HistoryProps)
                             </>
                           )}
                           <Clock className="h-4 w-4 mr-1" />
-                          <time dateTime={update.timestamp}>
-                            {new Date(update.timestamp).toLocaleString()}
+                          <time dateTime={update.updatedAt}>
+                            {new Date(update.updatedAt).toLocaleString()}
                           </time>
                         </div>
                         <div className="mt-2 w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">

@@ -1,5 +1,6 @@
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { notificationService } from './notificationService';
 import type { Project } from '../types';
 
 const COLLECTION_NAME = 'projects';
@@ -25,6 +26,20 @@ export const projectService = {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
+      // Notify members
+      try {
+        const members = (project as any).members as string[] | undefined;
+        if (Array.isArray(members)) {
+          await Promise.all(members.map(userId => notificationService.createNotification({
+            userId,
+            title: 'Added to Project',
+            message: `You were added to project "${(project as any).name || docRef.id}".`,
+            type: 'project',
+            priority: 'low',
+            link: '/projects'
+          } as any)));
+        }
+      } catch {}
       return {
         id: docRef.id,
         ...project
@@ -42,6 +57,21 @@ export const projectService = {
         ...project,
         updatedAt: new Date().toISOString()
       });
+      // Notify members on significant updates
+      try {
+        const current = (await getDocs(collection(db, COLLECTION_NAME))).docs.find(d => d.id === id)?.data() as any;
+        const members = current?.members as string[] | undefined;
+        if (Array.isArray(members)) {
+          await Promise.all(members.map(userId => notificationService.createNotification({
+            userId,
+            title: 'Project Updated',
+            message: `Project "${current?.name || id}" has new updates.`,
+            type: 'project',
+            priority: 'low',
+            link: '/projects'
+          } as any)));
+        }
+      } catch {}
       return {
         id,
         ...project

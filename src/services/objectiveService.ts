@@ -11,9 +11,11 @@ import {
   arrayRemove, 
   getDoc, 
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { notificationService } from './notificationService';
 import { kpiService } from './kpiService';
 import { getAuth } from 'firebase/auth';
 import type { Objective, KPI } from '../types';
@@ -32,6 +34,21 @@ export const objectiveService = {
       console.error('Error fetching objectives:', error);
       throw new Error('Failed to fetch objectives');
     }
+  },
+
+  // Real-time listener for objectives
+  subscribeToObjectives(callback: (objectives: Objective[]) => void) {
+    const q = query(collection(db, COLLECTION_NAME));
+    
+    return onSnapshot(q, (snapshot) => {
+      const objectives = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Objective[];
+      callback(objectives);
+    }, (error) => {
+      console.error('Error in objectives subscription:', error);
+    });
   },
 
   async addObjective(objective: Omit<Objective, 'id'>) {
@@ -99,6 +116,35 @@ export const objectiveService = {
       }
       
       await batch.commit();
+
+      // Notify owner and contributors about the update (best-effort)
+      try {
+        const ownerId = (currentObjective as any).ownerId as string | undefined;
+        const title = (currentObjective as any).title || id;
+        if (ownerId) {
+          await notificationService.createNotification({
+            userId: ownerId,
+            title: 'Objective Updated',
+            message: `Objective "${title}" was updated.`,
+            type: 'objective',
+            priority: 'low',
+            link: '/objectives'
+          } as any);
+        }
+        const contributors = (currentObjective as any).contributors as string[] | undefined;
+        if (Array.isArray(contributors)) {
+          await Promise.all(contributors.map(userId => notificationService.createNotification({
+            userId,
+            title: 'Objective Updated',
+            message: `Objective "${title}" was updated.`,
+            type: 'objective',
+            priority: 'low',
+            link: '/objectives'
+          } as any)));
+        }
+      } catch (e) {
+        // non-blocking
+      }
       
       // Recalculate progress for parent if exists
       if (currentObjective.parentId) {
@@ -144,6 +190,22 @@ export const objectiveService = {
       }
       
       await batch.commit();
+
+      // Notify owner (best-effort)
+      try {
+        const ownerId = (objective as any).ownerId as string | undefined;
+        const title = (objective as any).title || id;
+        if (ownerId) {
+          await notificationService.createNotification({
+            userId: ownerId,
+            title: 'Objective Archived',
+            message: `Objective "${title}" was archived.`,
+            type: 'objective',
+            priority: 'low',
+            link: '/objectives'
+          } as any);
+        }
+      } catch {}
       
       // Recalculate parent progress if exists
       if (objective.parentId) {
@@ -152,6 +214,102 @@ export const objectiveService = {
     } catch (error) {
       console.error('Error archiving objective:', error);
       throw new Error('Failed to archive objective');
+    }
+  },
+
+  async updateProgress(objectiveId: string, progress: number, comment: string, keyResultUpdates?: Record<string, number>) {
+    try {
+      const batch = writeBatch(db);
+      const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
+      
+      // Get current objective data
+      const objectiveDoc = await getDoc(objectiveRef);
+      if (!objectiveDoc.exists()) {
+        throw new Error('Objective not found');
+      }
+      
+      const currentObjective = objectiveDoc.data() as Objective;
+      
+      // Update objective progress
+      batch.update(objectiveRef, {
+        progress,
+        updatedAt: serverTimestamp(),
+        status: progress >= 90 ? 'on-track' : progress >= 60 ? 'at-risk' : 'behind'
+      });
+      
+      // Update key results if provided
+      if (keyResultUpdates && currentObjective.keyResults) {
+        const updatedKeyResults = currentObjective.keyResults.map(kr => {
+          const newCurrent = keyResultUpdates[kr.id] || kr.current;
+          return {
+            ...kr,
+            current: newCurrent,
+            progress: Math.min(100, Math.round((newCurrent / kr.target) * 100)),
+            lastUpdated: new Date().toISOString()
+          };
+        });
+        
+        batch.update(objectiveRef, {
+          keyResults: updatedKeyResults
+        });
+      }
+      
+      // Add progress update to history
+      const progressUpdate = {
+        progress,
+        comment,
+        updatedAt: new Date().toISOString(),
+        updatedBy: getAuth().currentUser?.uid || 'unknown'
+      };
+      
+      batch.update(objectiveRef, {
+        progressHistory: arrayUnion(progressUpdate)
+      });
+      
+      await batch.commit();
+      
+      // Update parent objective if exists
+      if (currentObjective.parentId) {
+        await this.calculateProgress(currentObjective.parentId);
+      }
+      
+      // Notify owner and contributors about progress update (best-effort)
+      try {
+        const ownerId = (currentObjective as any).ownerId as string | undefined;
+        const title = (currentObjective as any).title || objectiveId;
+        const contributors = (currentObjective as any).contributors as string[] | undefined;
+        const notifyUsers = new Set<string>();
+        if (ownerId) notifyUsers.add(ownerId);
+        if (Array.isArray(contributors)) contributors.forEach(id => notifyUsers.add(id));
+        if (notifyUsers.size > 0) {
+          await Promise.all(Array.from(notifyUsers).map(userId => notificationService.createNotification({
+            userId,
+            title: 'Objective Progress Updated',
+            message: `"${title}" progress is now ${progress}%.`,
+            type: 'objective',
+            priority: 'medium',
+            link: '/objectives'
+          } as any)));
+        }
+      } catch {}
+      
+      return {
+        id: objectiveId,
+        ...currentObjective,
+        progress,
+        keyResults: keyResultUpdates ? currentObjective.keyResults?.map(kr => {
+          const newCurrent = keyResultUpdates[kr.id] || kr.current;
+          return {
+            ...kr,
+            current: newCurrent,
+            progress: Math.min(100, Math.round((newCurrent / kr.target) * 100)),
+            lastUpdated: new Date().toISOString()
+          };
+        }) : currentObjective.keyResults
+      } as Objective;
+    } catch (error) {
+      console.error('Error updating objective progress:', error);
+      throw new Error('Failed to update progress');
     }
   },
 
@@ -246,6 +404,24 @@ export const objectiveService = {
       // Calculate new progress
       const progress = await this.calculateProgress(objectiveId);
 
+      // Notify owner
+      try {
+        const objRef = doc(db, COLLECTION_NAME, objectiveId);
+        const objSnap = await getDoc(objRef);
+        const objective = objSnap.data() as any;
+        const ownerId = objective?.ownerId as string | undefined;
+        const title = objective?.title || objectiveId;
+        if (ownerId) {
+          await notificationService.createNotification({
+            userId: ownerId,
+            title: 'KPI Linked',
+            message: `A KPI was linked to "${title}".`,
+            type: 'objective',
+            priority: 'low',
+            link: '/objectives'
+          } as any);
+        }
+      } catch {}
       return progress;
     } catch (error) {
       console.error('Error linking KPI to objective:', error);
@@ -276,6 +452,24 @@ export const objectiveService = {
       // Recalculate progress
       const progress = await this.calculateProgress(objectiveId);
 
+      // Notify owner
+      try {
+        const objRef = doc(db, COLLECTION_NAME, objectiveId);
+        const objSnap = await getDoc(objRef);
+        const objective = objSnap.data() as any;
+        const ownerId = objective?.ownerId as string | undefined;
+        const title = objective?.title || objectiveId;
+        if (ownerId) {
+          await notificationService.createNotification({
+            userId: ownerId,
+            title: 'KPI Unlinked',
+            message: `A KPI was unlinked from "${title}".`,
+            type: 'objective',
+            priority: 'low',
+            link: '/objectives'
+          } as any);
+        }
+      } catch {}
       return progress;
     } catch (error) {
       console.error('Error unlinking KPI from objective:', error);
@@ -350,6 +544,22 @@ export const objectiveService = {
       if (objective.parentId) {
         await this.calculateProgress(objective.parentId);
       }
+
+      // Notify owner
+      try {
+        const ownerId = (objective as any).ownerId as string | undefined;
+        const title = (objective as any).title || id;
+        if (ownerId) {
+          await notificationService.createNotification({
+            userId: ownerId,
+            title: 'Objective Deleted',
+            message: `Objective "${title}" was deleted.`,
+            type: 'objective',
+            priority: 'high',
+            link: '/objectives'
+          } as any);
+        }
+      } catch {}
     } catch (error: any) {
       console.error('Error deleting objective:', error);
       if (error.message === 'Only superadmin can delete objectives') {

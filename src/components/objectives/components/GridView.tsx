@@ -212,7 +212,11 @@ export default function GridView({
 }
 
 function organizeObjectivesHierarchy(objectives: Objective[]) {
-  const companyObjectives = objectives.filter(obj => obj.level === 'company');
+  // Get root objectives (company level or objectives without parents)
+  const rootObjectives = objectives.filter(obj => 
+    obj.level === 'company' || !obj.parentId || !objectives.some(parent => parent.id === obj.parentId)
+  );
+  
   const objectiveMap = new Map<string, Objective[]>();
 
   objectives.forEach(obj => {
@@ -222,5 +226,5 @@ function organizeObjectivesHierarchy(objectives: Objective[]) {
     }
   });
 
-  return { companyObjectives, objectiveMap };
+  return { companyObjectives: rootObjectives, objectiveMap };
 }

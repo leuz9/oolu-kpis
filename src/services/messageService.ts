@@ -19,6 +19,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { notificationService } from './notificationService';
 import { getAuth } from 'firebase/auth';
 import type { Message, Channel } from '../types';
 
@@ -183,6 +184,24 @@ export const messageService = {
       });
 
       await batch.commit();
+
+      // Notify channel members except sender (best-effort)
+      try {
+        const channelDoc = await getDoc(doc(db, CHANNELS_COLLECTION, channelId));
+        const channel = channelDoc.data() as Channel;
+        const members = channel?.members || [];
+        const senderId = (message.sender as any)?.id || (message.sender as any)?.userId;
+        await Promise.all(members
+          .filter((id: string) => id !== senderId)
+          .map((userId: string) => notificationService.createNotification({
+            userId,
+            title: `New message in ${channel?.name || 'channel'}`,
+            message: `${message.sender.name}: ${message.content.slice(0, 80)}`,
+            type: 'message',
+            priority: 'low',
+            link: '/messages'
+          } as any)));
+      } catch {}
 
       return {
         id: messageRef.id,

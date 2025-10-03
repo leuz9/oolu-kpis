@@ -194,7 +194,7 @@ export default function KeyResults({ keyResults, onUpdateProgress }: KeyResultsP
               />
             </div>
             <div className="mt-2 text-xs text-gray-500">
-              Last updated: {new Date(kr.lastUpdated).toLocaleDateString()}
+              Last updated: {kr.lastUpdated ? new Date(kr.lastUpdated).toLocaleDateString() : 'Never'}
             </div>
           </div>
         ))}

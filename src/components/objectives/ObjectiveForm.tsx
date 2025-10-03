@@ -19,7 +19,7 @@ interface ObjectiveFormProps {
 }
 
 export default function ObjectiveForm({ onClose, onSubmit, parentObjective, initialData }: ObjectiveFormProps) {
-  const [formData, setFormData] = useState(initialData || {
+  const [formData, setFormData] = useState({
     title: '',
     description: '',
     level: parentObjective ? 
@@ -30,7 +30,8 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
     quarter: `${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth() / 3) + 1}`,
     parentId: parentObjective?.id || null,
     contributors: [],
-    keyResults: []
+    keyResults: initialData?.keyResults || [],
+    ...initialData
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -81,21 +82,21 @@ export default function ObjectiveForm({ onClose, onSubmit, parentObjective, init
   const handleAddKeyResult = (keyResult: KeyResult) => {
     setFormData(prev => ({
       ...prev,
-      keyResults: [...prev.keyResults, keyResult]
+      keyResults: [...(prev.keyResults || []), keyResult]
     }));
   };
 
   const handleRemoveKeyResult = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      keyResults: prev.keyResults.filter((_, i) => i !== index)
+      keyResults: (prev.keyResults || []).filter((_, i) => i !== index)
     }));
   };
 
   const handleUpdateKeyResult = (index: number, updates: Partial<KeyResult>) => {
     setFormData(prev => ({
       ...prev,
-      keyResults: prev.keyResults.map((kr, i) => 
+      keyResults: (prev.keyResults || []).map((kr, i) => 
         i === index ? { ...kr, ...updates } : kr
       )
     }));

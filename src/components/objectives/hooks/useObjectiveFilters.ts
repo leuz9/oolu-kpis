@@ -30,7 +30,7 @@ export function useObjectiveFilters(objectives: Objective[]) {
       setFilters(prev => ({
         ...prev,
         department: user.department || 'all',
-        contributor: user.id
+        contributor: user.id || 'all'
       }));
     }
   }, [user]);
@@ -118,6 +118,36 @@ export function useObjectiveFilters(objectives: Objective[]) {
       return matchesSearch && matchesLevel && matchesStatus && matchesProgress && 
              matchesDueDate && matchesDepartment && matchesContributor && matchesKpis;
     });
+
+    // If filtering by contributor or department, include parent objectives to maintain hierarchy
+    if (filters.contributor !== 'all' || filters.department !== 'all') {
+      const filteredIds = new Set(filtered.map(obj => obj.id));
+      
+      // Add parent objectives for filtered objectives
+      filtered.forEach(obj => {
+        if (obj.parentId && !filteredIds.has(obj.parentId)) {
+          const parent = objectives.find(p => p.id === obj.parentId);
+          if (parent) {
+            filteredIds.add(parent.id);
+          }
+        }
+      });
+      
+      // Add grandparent objectives if needed
+      const allFilteredIds = Array.from(filteredIds);
+      allFilteredIds.forEach(id => {
+        const obj = objectives.find(o => o.id === id);
+        if (obj && obj.parentId && !filteredIds.has(obj.parentId)) {
+          const parent = objectives.find(p => p.id === obj.parentId);
+          if (parent) {
+            filteredIds.add(parent.id);
+          }
+        }
+      });
+      
+      const finalFiltered = objectives.filter(obj => filteredIds.has(obj.id));
+      return sortObjectives(finalFiltered, sort.field, sort.order);
+    }
 
     // Then sort filtered objectives
     return sortObjectives(filtered, sort.field, sort.order);

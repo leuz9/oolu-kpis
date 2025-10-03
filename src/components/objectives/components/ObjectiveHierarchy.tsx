@@ -23,8 +23,10 @@ export default function ObjectiveHierarchy({
     setExpandedNodes(newExpanded);
   };
 
-  // Organize objectives by level
-  const companyObjectives = objectives.filter(obj => obj.level === 'company');
+  // Organize objectives by level - include root objectives (company level or objectives without parents)
+  const companyObjectives = objectives.filter(obj => 
+    obj.level === 'company' || !obj.parentId || !objectives.some(parent => parent.id === obj.parentId)
+  );
   
   const getChildObjectives = (parentId: string) => {
     return objectives.filter(obj => obj.parentId === parentId);

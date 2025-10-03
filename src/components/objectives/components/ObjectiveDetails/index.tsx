@@ -58,12 +58,11 @@ export default function ObjectiveDetails({
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (progress: number, comment: string, keyResultUpdates?: Record<string, number>) => {
     try {
       setUpdating(true);
       setError(null);
-      const newProgress = await objectiveService.calculateProgress(objective.id);
-      objective.progress = newProgress;
+      await objectiveService.updateProgress(objective.id, progress, comment, keyResultUpdates);
       setShowProgressModal(false);
       setSuccess('Progress updated successfully');
       setTimeout(() => setSuccess(null), 3000);
@@ -133,7 +132,7 @@ export default function ObjectiveDetails({
         <div className="mt-8">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Update History</h3>
           <History 
-            history={objective.history} 
+            history={objective.progressHistory} 
             currentProgress={objective.progress}
           />
         </div>

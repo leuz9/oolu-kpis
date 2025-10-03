@@ -1,9 +1,10 @@
-import { Home, Target, PieChart, Users, Briefcase, Book, Bell, UserCog, BarChart3, FileText, Shield, Building2, Calendar, MessageSquare, Link2, Database, FileCode, CheckSquare, FolderKanban, Book as AddressBook } from 'lucide-react';
+import { Home, Target, Users, Book, Bell, UserCog, BarChart3, FileText, Shield, Building2, Calendar, MessageSquare, Link2, Database, FileCode, CheckSquare, FolderKanban, Book as AddressBook, Award } from 'lucide-react';
 import type { MenuItem } from './types';
 
 export const menuItems: MenuItem[] = [
   // Main Menu
   { icon: Home, label: 'Dashboard', path: '/' },
+  { icon: Award, label: 'Annual Appraisals', path: '/appraisals' },
   { icon: Target, label: 'Objectives', path: '/objectives' },
   { icon: Users, label: 'Team', path: '/team' },
   { icon: AddressBook, label: 'Directory', path: '/directory' },

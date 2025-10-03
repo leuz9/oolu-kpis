@@ -11,6 +11,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { notificationService } from './notificationService';
 import { getAuth } from 'firebase/auth';
 import type { Task } from '../types';
 
@@ -84,6 +85,20 @@ export const taskService = {
         updatedAt: timestamp
       });
 
+      // Notify assignee if different from creator
+      try {
+        if (task.assignee && task.assignee !== user.uid) {
+          await notificationService.createNotification({
+            userId: task.assignee,
+            title: 'New Task Assigned',
+            message: `${task.title || 'A task'} has been assigned to you.`,
+            type: 'project',
+            priority: 'medium',
+            link: '/tasks'
+          } as any);
+        }
+      } catch {}
+
       return {
         id: docRef.id,
         ...task,
@@ -105,6 +120,21 @@ export const taskService = {
         ...task,
         updatedAt: timestamp
       });
+      // Notifications for state changes
+      try {
+        const assignee = (task as any).assignee as string | undefined;
+        const status = (task as any).status as string | undefined;
+        if (assignee) {
+          await notificationService.createNotification({
+            userId: assignee,
+            title: 'Task Updated',
+            message: `A task assigned to you has been updated${status ? ` (status: ${status})` : ''}.`,
+            type: 'project',
+            priority: 'low',
+            link: '/tasks'
+          } as any);
+        }
+      } catch {}
       return {
         id,
         ...task,
@@ -144,6 +174,23 @@ export const taskService = {
         updatedAt: new Date().toISOString()
       });
 
+      // Notify assignee
+      try {
+        const current = (await getDoc(taskRef)).data() as any;
+        const assignee = current?.assignee as string | undefined;
+        const title = current?.title || 'Task';
+        if (assignee && assignee !== user.uid) {
+          await notificationService.createNotification({
+            userId: assignee,
+            title: 'New Task Comment',
+            message: `New comment on "${title}".`,
+            type: 'project',
+            priority: 'low',
+            link: '/tasks'
+          } as any);
+        }
+      } catch {}
+
       return comment;
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -155,8 +202,7 @@ export const taskService = {
     try {
       const taskRef = doc(db, COLLECTION_NAME, taskId);
       await updateDoc(taskRef, {
-        'subtasks': arrayRemove({ id: subtaskId, completed: !completed }),
-        'subtasks': arrayUnion({ id: subtaskId, completed }),
+        subtasks: arrayUnion({ id: subtaskId, completed }),
         updatedAt: new Date().toISOString()
       });
     } catch (error) {

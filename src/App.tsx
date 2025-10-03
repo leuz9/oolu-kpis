@@ -7,6 +7,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Profile from './components/profile/Profile';
 import Objectives from './components/objectives/Objectives';
+import Appraisals from './components/appraisals/Appraisals';
 import KeyResults from './components/key-results/KeyResults';
 import Team from './components/team/Team';
 import Directory from './components/directory/Directory';
@@ -55,6 +56,11 @@ function AppRoutes() {
         <Route path="/objectives/*" element={
           <PrivateRoute>
             <Objectives />
+          </PrivateRoute>
+        } />
+        <Route path="/appraisals/*" element={
+          <PrivateRoute>
+            <Appraisals />
           </PrivateRoute>
         } />
         <Route path="/key-results" element={
@@ -137,6 +143,11 @@ function AppRoutes() {
             <Settings />
           </PrivateRoute>
         } />
+        <Route path="/support" element={
+          <PrivateRoute>
+            <Support />
+          </PrivateRoute>
+        } />
       </Routes>
     </>
   );
@@ -144,13 +155,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <NotificationProvider>
           <AppRoutes />
-        </BrowserRouter>
-      </NotificationProvider>
-    </AuthProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { notificationService } from './notificationService';
 import type { UserSettings } from '../types';
 
 const COLLECTION_NAME = 'settings';
@@ -44,6 +45,17 @@ export const settingsService = {
     try {
       const settingsRef = doc(db, COLLECTION_NAME, userId);
       await updateDoc(settingsRef, settings);
+      // Notify user that settings changed
+      try {
+        await notificationService.createNotification({
+          userId,
+          title: 'Settings Updated',
+          message: 'Your account settings have been updated.',
+          type: 'system',
+          priority: 'low',
+          link: '/settings'
+        } as any);
+      } catch {}
       return settings;
     } catch (error) {
       console.error('Error updating user settings:', error);

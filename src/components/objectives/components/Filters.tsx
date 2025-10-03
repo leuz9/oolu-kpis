@@ -95,9 +95,13 @@ export default function Filters({
           </button>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setFilters({ ...filters, contributor: user?.id || 'all' })}
+              onClick={() => setFilters({ 
+                ...filters, 
+                contributor: user?.id || 'all',
+                department: 'all' // Reset department filter when showing my objectives
+              })}
               className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                filters.contributor === user?.id
+                filters.contributor === user?.id && filters.department === 'all'
                   ? 'bg-primary-100 text-primary-700 border border-primary-200'
                   : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
               }`}
@@ -107,9 +111,13 @@ export default function Filters({
             </button>
             {user?.department && (
               <button
-                onClick={() => setFilters({ ...filters, department: user.department || 'all' })}
+                onClick={() => setFilters({ 
+                  ...filters, 
+                  department: user.department || 'all',
+                  contributor: 'all' // Reset contributor filter when showing my department
+                })}
                 className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                  filters.department === user.department
+                  filters.department === user.department && filters.contributor === 'all'
                     ? 'bg-primary-100 text-primary-700 border border-primary-200'
                     : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                 }`}

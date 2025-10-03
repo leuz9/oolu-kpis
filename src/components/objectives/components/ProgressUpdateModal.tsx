@@ -5,7 +5,7 @@ import type { Objective, KeyResult } from '../../../types';
 interface ProgressUpdateModalProps {
   objective: Objective;
   onClose: () => void;
-  onUpdate: (progress: number, comment: string) => Promise<void>;
+  onUpdate: (progress: number, comment: string, keyResultUpdates?: Record<string, number>) => Promise<void>;
 }
 
 export default function ProgressUpdateModal({ objective, onClose, onUpdate }: ProgressUpdateModalProps) {
@@ -29,7 +29,7 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
 
     try {
       setLoading(true);
-      await onUpdate(progress, comment);
+      await onUpdate(progress, comment, keyResultUpdates);
       onClose();
     } catch (err) {
       console.error('Error updating progress:', err);

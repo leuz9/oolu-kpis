@@ -8,7 +8,15 @@ export function useObjectives() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchObjectives();
+    // Use real-time listener instead of one-time fetch
+    const unsubscribe = objectiveService.subscribeToObjectives((objectives) => {
+      setObjectives(objectives);
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const fetchObjectives = async () => {
@@ -27,7 +35,7 @@ export function useObjectives() {
   const addObjective = async (newObjective: Omit<Objective, 'id'>) => {
     try {
       const createdObjective = await objectiveService.addObjective(newObjective);
-      setObjectives(prev => [...prev, createdObjective]);
+      // No need to manually update state - real-time listener will handle it
       return createdObjective;
     } catch (err) {
       setError('Failed to create objective. Please try again.');
@@ -39,9 +47,7 @@ export function useObjectives() {
   const updateObjective = async (updatedObjective: Objective) => {
     try {
       await objectiveService.updateObjective(updatedObjective.id, updatedObjective);
-      setObjectives(prev => prev.map(obj =>
-        obj.id === updatedObjective.id ? updatedObjective : obj
-      ));
+      // No need to manually update state - real-time listener will handle it
       return updatedObjective;
     } catch (err) {
       setError('Failed to update objective. Please try again.');
@@ -53,7 +59,7 @@ export function useObjectives() {
   const archiveObjective = async (objectiveId: string) => {
     try {
       await objectiveService.archiveObjective(objectiveId);
-      setObjectives(prev => prev.filter(obj => obj.id !== objectiveId));
+      // No need to manually update state - real-time listener will handle it
     } catch (err: any) {
       setError(err.message || 'Failed to archive objective. Please try again.');
       console.error('Error archiving objective:', err);
@@ -64,7 +70,7 @@ export function useObjectives() {
   const deleteObjective = async (objectiveId: string) => {
     try {
       await objectiveService.deleteObjective(objectiveId);
-      setObjectives(prev => prev.filter(obj => obj.id !== objectiveId));
+      // No need to manually update state - real-time listener will handle it
     } catch (err: any) {
       if (err.message === 'Only superadmin can delete objectives') {
         setError('Only superadmin can delete objectives');
@@ -79,17 +85,7 @@ export function useObjectives() {
   const linkKPI = async (objectiveId: string, kpiId: string) => {
     try {
       await objectiveService.linkKPI(objectiveId, kpiId);
-      const updatedObjective = await objectiveService.calculateProgress(objectiveId);
-      setObjectives(prev => prev.map(obj => {
-        if (obj.id === objectiveId) {
-          return {
-            ...obj,
-            kpiIds: [...(obj.kpiIds || []), kpiId],
-            progress: updatedObjective
-          };
-        }
-        return obj;
-      }));
+      // No need to manually update state - real-time listener will handle it
     } catch (err) {
       setError('Failed to link KPI to objective. Please try again.');
       console.error('Error linking KPI:', err);
@@ -100,20 +96,22 @@ export function useObjectives() {
   const unlinkKPI = async (objectiveId: string, kpiId: string) => {
     try {
       await objectiveService.unlinkKPI(objectiveId, kpiId);
-      const updatedObjective = await objectiveService.calculateProgress(objectiveId);
-      setObjectives(prev => prev.map(obj => {
-        if (obj.id === objectiveId) {
-          return {
-            ...obj,
-            kpiIds: obj.kpiIds?.filter(id => id !== kpiId) || [],
-            progress: updatedObjective
-          };
-        }
-        return obj;
-      }));
+      // No need to manually update state - real-time listener will handle it
     } catch (err) {
       setError('Failed to unlink KPI from objective. Please try again.');
       console.error('Error unlinking KPI:', err);
+      throw err;
+    }
+  };
+
+  const updateProgress = async (objectiveId: string, progress: number, comment: string, keyResultUpdates?: Record<string, number>) => {
+    try {
+      const updatedObjective = await objectiveService.updateProgress(objectiveId, progress, comment, keyResultUpdates);
+      // No need to manually update state - real-time listener will handle it
+      return updatedObjective;
+    } catch (err) {
+      setError('Failed to update objective progress. Please try again.');
+      console.error('Error updating progress:', err);
       throw err;
     }
   };
@@ -124,6 +122,7 @@ export function useObjectives() {
     error,
     addObjective,
     updateObjective,
+    updateProgress,
     archiveObjective,
     deleteObjective,
     linkKPI,

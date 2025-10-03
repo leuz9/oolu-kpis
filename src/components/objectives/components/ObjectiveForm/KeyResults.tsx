@@ -29,6 +29,7 @@ export default function KeyResults({ keyResults = [], onAdd, onRemove, onUpdate 
       current: newKeyResult.startValue || 0,
       progress: 0,
       status: 'on-track',
+      lastUpdated: new Date().toISOString(),
       checkIns: []
     } as KeyResult);
 
