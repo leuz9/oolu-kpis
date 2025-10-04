@@ -31,9 +31,7 @@ export default function Objectives() {
     addObjective,
     updateObjective,
     archiveObjective,
-    deleteObjective,
-    linkKPI,
-    unlinkKPI
+    deleteObjective
   } = useObjectives();
 
   const {
@@ -166,8 +164,6 @@ export default function Objectives() {
                         onEdit={() => setEditingObjective(selectedObjective)}
                         onArchive={() => archiveObjective(selectedObjective.id)}
                         onDelete={() => setShowDeleteConfirm(true)}
-                        onLinkKPI={linkKPI}
-                        onUnlinkKPI={unlinkKPI}
                       />
                     ) : (
                       <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center justify-center text-gray-500 h-96">
@@ -187,8 +183,6 @@ export default function Objectives() {
                     onEdit={() => setEditingObjective(selectedObjective)}
                     onArchive={archiveObjective}
                     onDelete={() => setShowDeleteConfirm(true)}
-                    onLinkKPI={linkKPI}
-                    onUnlinkKPI={unlinkKPI}
                   />
                 </div>
               ) : (
@@ -200,8 +194,6 @@ export default function Objectives() {
                     onEdit={() => setEditingObjective(selectedObjective)}
                     onArchive={archiveObjective}
                     onDelete={() => setShowDeleteConfirm(true)}
-                    onLinkKPI={linkKPI}
-                    onUnlinkKPI={unlinkKPI}
                   />
                 </div>
               )}

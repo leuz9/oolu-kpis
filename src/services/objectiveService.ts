@@ -16,9 +16,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { notificationService } from './notificationService';
-import { kpiService } from './kpiService';
 import { getAuth } from 'firebase/auth';
-import type { Objective, KPI } from '../types';
+import type { Objective } from '../types';
 
 const COLLECTION_NAME = 'objectives';
 
@@ -325,17 +324,6 @@ export const objectiveService = {
 
       const objective = objectiveDoc.data() as Objective;
       
-      // Calculate progress based on KPIs
-      let kpiProgress = 0;
-      let kpiCount = 0;
-      if (objective.kpiIds?.length > 0) {
-        const kpis = await kpiService.getKPIsByObjective(objectiveId);
-        if (kpis.length > 0) {
-          kpiProgress = kpis.reduce((sum, kpi) => sum + (kpi.progress || 0), 0);
-          kpiCount = kpis.length;
-        }
-      }
-
       // Get child objectives
       const childObjectivesQuery = query(
         collection(db, COLLECTION_NAME),
@@ -347,18 +335,26 @@ export const objectiveService = {
         ...doc.data()
       })) as Objective[];
 
-      // Calculate progress including child objectives
-      let totalProgress = kpiProgress;
-      let totalCount = kpiCount;
+      let progress = 0;
 
       if (childObjectives.length > 0) {
+        // Calculate based on child objectives
         const childProgress = childObjectives.reduce((sum, child) => sum + (child.progress || 0), 0);
-        totalProgress += childProgress;
-        totalCount += childObjectives.length;
+        progress = Math.round(childProgress / childObjectives.length);
+        console.log(`Parent objective ${objectiveId}: ${childObjectives.length} children, avg progress: ${progress}%`);
+      } else if (objective.keyResults && objective.keyResults.length > 0) {
+        // Calculate based on key results
+        const keyResultsProgress = objective.keyResults.reduce((sum, kr) => {
+          const krProgress = Math.min(100, Math.round((kr.current / kr.target) * 100));
+          return sum + krProgress;
+        }, 0);
+        progress = Math.round(keyResultsProgress / objective.keyResults.length);
+        console.log(`Objective ${objectiveId}: ${objective.keyResults.length} key results, avg progress: ${progress}%`);
+      } else {
+        // Use direct progress (should be set manually)
+        progress = objective.progress || 0;
+        console.log(`Objective ${objectiveId}: direct progress: ${progress}%`);
       }
-
-      // Calculate final progress
-      const progress = totalCount > 0 ? Math.round(totalProgress / totalCount) : 0;
 
       // Update objective progress
       batch.update(objectiveRef, {
@@ -381,101 +377,6 @@ export const objectiveService = {
     }
   },
 
-  async linkKPI(objectiveId: string, kpiId: string) {
-    try {
-      const batch = writeBatch(db);
-      
-      // Update objective
-      const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
-      batch.update(objectiveRef, {
-        kpiIds: arrayUnion(kpiId),
-        updatedAt: serverTimestamp()
-      });
-      
-      // Update KPI
-      const kpiRef = doc(db, 'kpis', kpiId);
-      batch.update(kpiRef, {
-        objectiveIds: arrayUnion(objectiveId),
-        updatedAt: serverTimestamp()
-      });
-      
-      await batch.commit();
-
-      // Calculate new progress
-      const progress = await this.calculateProgress(objectiveId);
-
-      // Notify owner
-      try {
-        const objRef = doc(db, COLLECTION_NAME, objectiveId);
-        const objSnap = await getDoc(objRef);
-        const objective = objSnap.data() as any;
-        const ownerId = objective?.ownerId as string | undefined;
-        const title = objective?.title || objectiveId;
-        if (ownerId) {
-          await notificationService.createNotification({
-            userId: ownerId,
-            title: 'KPI Linked',
-            message: `A KPI was linked to "${title}".`,
-            type: 'objective',
-            priority: 'low',
-            link: '/objectives'
-          } as any);
-        }
-      } catch {}
-      return progress;
-    } catch (error) {
-      console.error('Error linking KPI to objective:', error);
-      throw new Error('Failed to link KPI');
-    }
-  },
-
-  async unlinkKPI(objectiveId: string, kpiId: string) {
-    try {
-      const batch = writeBatch(db);
-      
-      // Update objective
-      const objectiveRef = doc(db, COLLECTION_NAME, objectiveId);
-      batch.update(objectiveRef, {
-        kpiIds: arrayRemove(kpiId),
-        updatedAt: serverTimestamp()
-      });
-      
-      // Update KPI
-      const kpiRef = doc(db, 'kpis', kpiId);
-      batch.update(kpiRef, {
-        objectiveIds: arrayRemove(objectiveId),
-        updatedAt: serverTimestamp()
-      });
-      
-      await batch.commit();
-
-      // Recalculate progress
-      const progress = await this.calculateProgress(objectiveId);
-
-      // Notify owner
-      try {
-        const objRef = doc(db, COLLECTION_NAME, objectiveId);
-        const objSnap = await getDoc(objRef);
-        const objective = objSnap.data() as any;
-        const ownerId = objective?.ownerId as string | undefined;
-        const title = objective?.title || objectiveId;
-        if (ownerId) {
-          await notificationService.createNotification({
-            userId: ownerId,
-            title: 'KPI Unlinked',
-            message: `A KPI was unlinked from "${title}".`,
-            type: 'objective',
-            priority: 'low',
-            link: '/objectives'
-          } as any);
-        }
-      } catch {}
-      return progress;
-    } catch (error) {
-      console.error('Error unlinking KPI from objective:', error);
-      throw new Error('Failed to unlink KPI');
-    }
-  },
 
   async deleteObjective(id: string) {
     try {
@@ -524,16 +425,6 @@ export const objectiveService = {
         });
       }
 
-      // Unlink any associated KPIs
-      if (objective.kpiIds?.length) {
-        for (const kpiId of objective.kpiIds) {
-          const kpiRef = doc(db, 'kpis', kpiId);
-          batch.update(kpiRef, {
-            objectiveIds: arrayRemove(id),
-            updatedAt: serverTimestamp()
-          });
-        }
-      }
       
       // Delete the objective
       batch.delete(objectiveRef);

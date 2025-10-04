@@ -316,6 +316,7 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
       text: '',
       type: 'rating',
       required: true,
+      appliesTo: ['self','manager','hr'],
       order: formData.sections[sectionIndex].questions.length
     };
     const updatedSections = [...formData.sections];
@@ -487,7 +488,7 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
                                 className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                                 required
                               />
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <select
                                   value={question.type}
                                   onChange={(e) => updateQuestion(sectionIndex, questionIndex, 'type', e.target.value)}
@@ -508,6 +509,28 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
                                   />
                                   Required
                                 </label>
+
+                                {/* Applies To Checklist */}
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-gray-500">Applies to:</span>
+                                  {(['self','manager','hr'] as const).map(role => (
+                                    <label key={role} className="inline-flex items-center gap-1">
+                                      <input
+                                        type="checkbox"
+                                        className="h-3 w-3"
+                                        checked={(question.appliesTo || ['self','manager','hr']).includes(role)}
+                                        onChange={(e) => {
+                                          const current = question.appliesTo || ['self','manager','hr'];
+                                          const next = e.target.checked
+                                            ? Array.from(new Set([...current, role]))
+                                            : current.filter(r => r !== role);
+                                          updateQuestion(sectionIndex, questionIndex, 'appliesTo', next);
+                                        }}
+                                      />
+                                      <span className="capitalize">{role}</span>
+                                    </label>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                             <button
@@ -1371,7 +1394,7 @@ function ViewTemplateModal({ template, onClose }: ViewTemplateModalProps) {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-4 mt-2">
+                          <div className="flex items-center gap-4 mt-2 flex-wrap">
                             <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
                               {question.type.charAt(0).toUpperCase() + question.type.slice(1).replace('-', ' ')}
                             </span>
@@ -1380,6 +1403,9 @@ function ViewTemplateModal({ template, onClose }: ViewTemplateModalProps) {
                                 Required
                               </span>
                             )}
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              Applies: {(question.appliesTo || ['self','manager','hr']).map(r => r.toUpperCase()).join(', ')}
+                            </span>
                           </div>
 
                           {question.type === 'multiple-choice' && question.options && (

@@ -33,13 +33,15 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
       const initialResponses: QuestionResponse[] = [];
       if (templateData) {
         templateData.sections.forEach(section => {
-          section.questions.forEach(question => {
-            initialResponses.push({
-              questionId: question.id,
-              answer: question.type === 'rating' ? 3 : '',
-              comments: ''
+          section.questions
+            .filter(q => !q.appliesTo || q.appliesTo.includes(reviewType))
+            .forEach(question => {
+              initialResponses.push({
+                questionId: question.id,
+                answer: question.type === 'rating' ? 3 : '',
+                comments: ''
+              });
             });
-          });
         });
       }
       setResponses(initialResponses);
@@ -66,7 +68,9 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
     // Validate required questions
     if (template) {
       const requiredQuestions = template.sections.flatMap(s => 
-        s.questions.filter(q => q.required).map(q => q.id)
+        s.questions
+          .filter(q => (!q.appliesTo || q.appliesTo.includes(reviewType)) && q.required)
+          .map(q => q.id)
       );
       
       const unansweredRequired = requiredQuestions.filter(qId => {
@@ -146,6 +150,10 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
   };
 
   const renderQuestion = (question: any, sectionWeight: number) => {
+    // Skip questions not applicable to this review type
+    if (question.appliesTo && !question.appliesTo.includes(reviewType)) {
+      return null;
+    }
     const response = getResponse(question.id);
     
     return (
@@ -337,6 +345,7 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
 
                 <div className="space-y-4">
                   {section.questions
+                    .filter(q => !q.appliesTo || q.appliesTo.includes(reviewType))
                     .sort((a, b) => a.order - b.order)
                     .map((question) => renderQuestion(question, section.weight))}
                 </div>

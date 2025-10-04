@@ -82,27 +82,6 @@ export function useObjectives() {
     }
   };
 
-  const linkKPI = async (objectiveId: string, kpiId: string) => {
-    try {
-      await objectiveService.linkKPI(objectiveId, kpiId);
-      // No need to manually update state - real-time listener will handle it
-    } catch (err) {
-      setError('Failed to link KPI to objective. Please try again.');
-      console.error('Error linking KPI:', err);
-      throw err;
-    }
-  };
-
-  const unlinkKPI = async (objectiveId: string, kpiId: string) => {
-    try {
-      await objectiveService.unlinkKPI(objectiveId, kpiId);
-      // No need to manually update state - real-time listener will handle it
-    } catch (err) {
-      setError('Failed to unlink KPI from objective. Please try again.');
-      console.error('Error unlinking KPI:', err);
-      throw err;
-    }
-  };
 
   const updateProgress = async (objectiveId: string, progress: number, comment: string, keyResultUpdates?: Record<string, number>) => {
     try {
@@ -125,8 +104,6 @@ export function useObjectives() {
     updateProgress,
     archiveObjective,
     deleteObjective,
-    linkKPI,
-    unlinkKPI,
     refreshObjectives: fetchObjectives
   };
 }
