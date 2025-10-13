@@ -40,23 +40,43 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
   };
 
   const adjustProgress = (amount: number) => {
-    setProgress(prev => Math.min(Math.max(prev + amount, 0), 100));
+    setProgress(prev => {
+      const newProgress = Math.min(Math.max(prev + amount, 0), 100);
+      
+      // If objective has key results, update them proportionally
+      if (objective.keyResults?.length) {
+        const progressRatio = newProgress / 100;
+        const updatedKeyResultUpdates = { ...keyResultUpdates };
+        
+        objective.keyResults.forEach(kr => {
+          const targetProgress = kr.target * progressRatio;
+          updatedKeyResultUpdates[kr.id] = Math.min(Math.max(targetProgress, 0), kr.target);
+        });
+        
+        setKeyResultUpdates(updatedKeyResultUpdates);
+      }
+      
+      return newProgress;
+    });
   };
 
   const handleKeyResultUpdate = (keyResult: KeyResult, value: number) => {
-    setKeyResultUpdates(prev => ({
-      ...prev,
+    const updatedKeyResultUpdates = {
+      ...keyResultUpdates,
       [keyResult.id]: value
-    }));
+    };
+    
+    setKeyResultUpdates(updatedKeyResultUpdates);
 
     // Recalculate overall progress based on key results
     if (objective.keyResults?.length) {
       const totalProgress = objective.keyResults.reduce((sum, kr) => {
-        const currentValue = keyResultUpdates[kr.id] || kr.current;
-        return sum + (currentValue / kr.target) * 100;
+        const currentValue = updatedKeyResultUpdates[kr.id] !== undefined ? updatedKeyResultUpdates[kr.id] : kr.current;
+        const progressPercentage = (currentValue / kr.target) * 100;
+        return sum + Math.min(progressPercentage, 100); // Ensure no single KR exceeds 100%
       }, 0);
       const averageProgress = Math.round(totalProgress / objective.keyResults.length);
-      setProgress(averageProgress);
+      setProgress(Math.min(averageProgress, 100)); // Ensure overall progress doesn't exceed 100%
     }
   };
 
@@ -164,7 +184,23 @@ export default function ProgressUpdateModal({ objective, onClose, onUpdate }: Pr
                       min="0"
                       max="100"
                       value={progress}
-                      onChange={(e) => setProgress(parseInt(e.target.value))}
+                      onChange={(e) => {
+                        const newProgress = parseInt(e.target.value);
+                        setProgress(newProgress);
+                        
+                        // If objective has key results, update them proportionally
+                        if (objective.keyResults?.length) {
+                          const progressRatio = newProgress / 100;
+                          const updatedKeyResultUpdates = { ...keyResultUpdates };
+                          
+                          objective.keyResults.forEach(kr => {
+                            const targetProgress = kr.target * progressRatio;
+                            updatedKeyResultUpdates[kr.id] = Math.min(Math.max(targetProgress, 0), kr.target);
+                          });
+                          
+                          setKeyResultUpdates(updatedKeyResultUpdates);
+                        }
+                      }}
                       className="w-full"
                     />
                   </div>

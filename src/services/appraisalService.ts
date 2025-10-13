@@ -16,6 +16,7 @@ import {
 import { db } from '../config/firebase';
 import { userService } from './userService';
 import { objectiveService } from './objectiveService';
+import { notificationService } from './notificationService';
 import type { 
   AppraisalCycle, 
   AppraisalTemplate, 
@@ -313,6 +314,60 @@ export class AppraisalService {
 
       batch.update(appraisalRef, updateData);
       await batch.commit();
+
+      // Send notifications based on the type of response submitted
+      try {
+        const employee = await userService.getUser(currentAppraisal.employeeId);
+        const manager = currentAppraisal.managerId ? await userService.getUser(currentAppraisal.managerId) : null;
+        
+        if (type === 'self') {
+          // Notify manager that employee completed self-review
+          if (manager && currentAppraisal.managerId !== currentAppraisal.employeeId) {
+            await notificationService.createNotification({
+              userId: currentAppraisal.managerId,
+              title: 'Self-Review Completed',
+              message: `${employee?.name || employee?.email || 'Employee'} has completed their self-review. Please complete your manager review.`,
+              type: 'appraisal',
+              priority: 'medium',
+              link: '/appraisals'
+            } as any);
+          }
+        } else if (type === 'manager') {
+          // Notify employee that manager completed review
+          await notificationService.createNotification({
+            userId: currentAppraisal.employeeId,
+            title: 'Manager Review Completed',
+            message: `Your manager has completed their review of your appraisal. ${template?.reviewType === 'both' ? 'HR review is now pending.' : 'Your appraisal is now complete.'}`,
+            type: 'appraisal',
+            priority: 'medium',
+            link: '/appraisals'
+          } as any);
+        } else if (type === 'hr') {
+          // Notify employee and manager that appraisal is complete
+          await notificationService.createNotification({
+            userId: currentAppraisal.employeeId,
+            title: 'Appraisal Complete',
+            message: 'Your annual appraisal has been completed. You can view the final results.',
+            type: 'appraisal',
+            priority: 'medium',
+            link: '/appraisals'
+          } as any);
+          
+          if (manager && currentAppraisal.managerId !== currentAppraisal.employeeId) {
+            await notificationService.createNotification({
+              userId: currentAppraisal.managerId,
+              title: 'Appraisal Complete',
+              message: `The appraisal for ${employee?.name || employee?.email || 'your employee'} has been completed by HR.`,
+              type: 'appraisal',
+              priority: 'medium',
+              link: '/appraisals'
+            } as any);
+          }
+        }
+      } catch (error) {
+        console.error('Error sending appraisal submission notifications:', error);
+        // Don't throw error here as the response was submitted successfully
+      }
     } catch (error) {
       console.error('Error submitting appraisal response:', error);
       throw error;
@@ -339,6 +394,25 @@ export class AppraisalService {
         ...feedback,
         createdAt: serverTimestamp()
       });
+
+      // Send notification to the employee being reviewed
+      try {
+        const employee = await userService.getUser(feedback.revieweeId);
+        const reviewer = await userService.getUser(feedback.reviewerId);
+        
+        await notificationService.createNotification({
+          userId: feedback.revieweeId,
+          title: '360° Feedback Received',
+          message: `${reviewer?.name || reviewer?.email || 'A colleague'} has provided 360° feedback for your appraisal.`,
+          type: 'appraisal',
+          priority: 'low',
+          link: '/appraisals'
+        } as any);
+      } catch (error) {
+        console.error('Error sending 360 feedback notification:', error);
+        // Don't throw error here as the feedback was submitted successfully
+      }
+
       return docRef.id;
     } catch (error) {
       console.error('Error submitting 360 feedback:', error);
@@ -527,6 +601,71 @@ export class AppraisalService {
       }
 
       await batch.commit();
+
+      // Send notifications to employees and managers
+      try {
+        const cycle = await this.getCycle(cycleId);
+        const template = await this.getTemplate(templateId);
+        
+        for (const { employeeId, user } of usersData) {
+          if (user) {
+            // Get manager info
+            let managerId = employeeId;
+            if (user.managerId && typeof user.managerId === 'string' && user.managerId.trim() !== '') {
+              managerId = user.managerId;
+            } else {
+              try {
+                const teamQuery = query(
+                  collection(db, 'team'),
+                  where('userId', '==', employeeId)
+                );
+                const teamSnapshot = await getDocs(teamQuery);
+                if (!teamSnapshot.empty) {
+                  const teamData = teamSnapshot.docs[0].data();
+                  if (teamData.manager && teamData.manager.trim() !== '') {
+                    managerId = teamData.manager;
+                  }
+                }
+              } catch (error) {
+                console.error(`Error getting manager for notification ${employeeId}:`, error);
+              }
+            }
+
+            // Notify employee
+            try {
+              await notificationService.createNotification({
+                userId: employeeId,
+                title: 'New Appraisal Created',
+                message: `A new appraisal has been created for you for ${cycle?.name || 'the current cycle'}. Please complete your self-review when ready.`,
+                type: 'appraisal',
+                priority: 'medium',
+                link: '/appraisals'
+              } as any);
+            } catch (error) {
+              console.error(`Error notifying employee ${employeeId}:`, error);
+            }
+
+            // Notify manager (if different from employee)
+            if (managerId !== employeeId) {
+              try {
+                await notificationService.createNotification({
+                  userId: managerId,
+                  title: 'New Appraisal to Review',
+                  message: `A new appraisal has been created for ${user.name || user.email} for ${cycle?.name || 'the current cycle'}. Please review when the employee completes their self-review.`,
+                  type: 'appraisal',
+                  priority: 'medium',
+                  link: '/appraisals'
+                } as any);
+              } catch (error) {
+                console.error(`Error notifying manager ${managerId}:`, error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error sending appraisal notifications:', error);
+        // Don't throw error here as appraisals were created successfully
+      }
     } catch (error) {
       console.error('Error creating appraisals for cycle:', error);
       throw error;
