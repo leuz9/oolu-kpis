@@ -26,6 +26,7 @@ import Integrations from './components/integrations/Integrations';
 import API from './components/api/API';
 import Support from './components/support/Support';
 import OnboardingTour from './components/onboarding/OnboardingTour';
+import UpdatePrompt from './components/UpdatePrompt';
 
 function PrivateRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user } = useAuth();
@@ -158,6 +159,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
+          <UpdatePrompt />
           <AppRoutes />
         </NotificationProvider>
       </AuthProvider>

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "prebuild": "node scripts/generate-version.cjs",
+    "build": "vite build && cp public/version.json dist/version.json",
     "lint": "eslint .",
     "preview": "vite preview"
   },
