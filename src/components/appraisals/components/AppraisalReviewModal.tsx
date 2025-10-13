@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Send, Star, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AppraisalService } from '../../../services/appraisalService';
@@ -33,15 +33,13 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
       const initialResponses: QuestionResponse[] = [];
       if (templateData) {
         templateData.sections.forEach(section => {
-          section.questions
-            .filter(q => !q.appliesTo || q.appliesTo.includes(reviewType))
-            .forEach(question => {
-              initialResponses.push({
-                questionId: question.id,
-                answer: question.type === 'rating' ? 3 : '',
-                comments: ''
-              });
+          section.questions.forEach(question => {
+            initialResponses.push({
+              questionId: question.id,
+              answer: question.type === 'rating' ? 3 : '',
+              comments: ''
             });
+          });
         });
       }
       setResponses(initialResponses);
@@ -65,12 +63,32 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
   const handleSubmit = async () => {
     if (!user) return;
 
+    // Check permissions based on template reviewType
+    if (reviewType === 'self' && template?.reviewType && template.reviewType !== 'self' && template.reviewType !== 'both') {
+      alert('This template does not allow self reviews.');
+      return;
+    }
+    
+    if (reviewType === 'manager' && template?.reviewType && template.reviewType !== 'manager' && template.reviewType !== 'both') {
+      alert('This template does not allow manager reviews.');
+      return;
+    }
+
+    // Check user permissions
+    if (reviewType === 'self' && user.id !== appraisal.employeeId) {
+      alert('Only the employee can submit a self review.');
+      return;
+    }
+    
+    if (reviewType === 'manager' && user.id !== appraisal.managerId) {
+      alert('Only the manager can submit a manager review.');
+      return;
+    }
+
     // Validate required questions
     if (template) {
       const requiredQuestions = template.sections.flatMap(s => 
-        s.questions
-          .filter(q => (!q.appliesTo || q.appliesTo.includes(reviewType)) && q.required)
-          .map(q => q.id)
+        s.questions.filter(q => q.required).map(q => q.id)
       );
       
       const unansweredRequired = requiredQuestions.filter(qId => {
@@ -149,11 +167,7 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
     }
   };
 
-  const renderQuestion = (question: any, sectionWeight: number) => {
-    // Skip questions not applicable to this review type
-    if (question.appliesTo && !question.appliesTo.includes(reviewType)) {
-      return null;
-    }
+  const renderQuestion = (question: any) => {
     const response = getResponse(question.id);
     
     return (
@@ -345,9 +359,8 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
 
                 <div className="space-y-4">
                   {section.questions
-                    .filter(q => !q.appliesTo || q.appliesTo.includes(reviewType))
                     .sort((a, b) => a.order - b.order)
-                    .map((question) => renderQuestion(question, section.weight))}
+                    .map((question) => renderQuestion(question))}
                 </div>
               </div>
             ))}

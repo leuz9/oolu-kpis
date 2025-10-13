@@ -19,7 +19,7 @@ import { AppraisalService } from '../../../services/appraisalService';
 import { userService } from '../../../services/userService';
 import { AppraisalReviewModal } from './AppraisalReviewModal';
 import { SuccessModal } from './SuccessModal';
-import type { Appraisal, User as UserType, AppraisalGoal, AppraisalCompetency } from '../../../types';
+import type { Appraisal, User as UserType, AppraisalGoal, AppraisalCompetency, AppraisalTemplate } from '../../../types';
 
 interface AppraisalDetailModalProps {
   appraisal: Appraisal;
@@ -33,6 +33,7 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
   const [loading, setLoading] = useState(false);
   const [employee, setEmployee] = useState<UserType | null>(null);
   const [manager, setManager] = useState<UserType | null>(null);
+  const [template, setTemplate] = useState<AppraisalTemplate | null>(null);
   const [goals, setGoals] = useState<AppraisalGoal[]>(appraisal.goals || []);
   const [competencies, setCompetencies] = useState<AppraisalCompetency[]>(appraisal.competencies || []);
   const [overallRating, setOverallRating] = useState<number>(appraisal.overallRating || 0);
@@ -43,6 +44,7 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
 
   useEffect(() => {
     loadUsers();
+    loadTemplate();
   }, []);
 
   const loadUsers = async () => {
@@ -78,6 +80,15 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
       }
     } catch (error) {
       console.error('Error loading users:', error);
+    }
+  };
+
+  const loadTemplate = async () => {
+    try {
+      const templateData = await AppraisalService.getTemplate(appraisal.templateId);
+      setTemplate(templateData);
+    } catch (error) {
+      console.error('Error loading template:', error);
     }
   };
 
@@ -213,9 +224,26 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
   };
 
   const canEdit = user?.id === appraisal.managerId || user?.isAdmin;
-  const canStartSelfReview = user?.id === appraisal.employeeId && appraisal.status === 'draft';
-  const canStartManagerReview = user?.id === appraisal.managerId && appraisal.status === 'self-review';
-  const canStartHRReview = user?.isAdmin && appraisal.status === 'manager-review';
+  
+  // Check if template allows self review and user is the employee
+  const canStartSelfReview = user?.id === appraisal.employeeId && 
+    appraisal.status === 'draft' && 
+    template?.reviewType && 
+    (template.reviewType === 'self' || template.reviewType === 'both');
+  
+  // Check if template allows manager review and user is the manager
+  const canStartManagerReview = user?.id === appraisal.managerId && 
+    template?.reviewType && 
+    (template.reviewType === 'manager' || template.reviewType === 'both') &&
+    (
+      // For "both" type: manager can start after self-review
+      (template.reviewType === 'both' && appraisal.status === 'self-review') ||
+      // For "manager" type: manager can start directly from draft
+      (template.reviewType === 'manager' && appraisal.status === 'draft')
+    );
+  
+  // Remove HR review functionality
+  const canStartHRReview = false;
 
   const handleStartReview = (type: 'self' | 'manager' | 'hr') => {
     setReviewType(type);

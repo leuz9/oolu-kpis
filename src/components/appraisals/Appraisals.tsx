@@ -44,6 +44,16 @@ export default function Appraisals() {
     loadData();
   }, []);
 
+  // Set default view based on user permissions
+  useEffect(() => {
+    if (user) {
+      const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+      if (!isAdmin && currentView === 'dashboard') {
+        setCurrentView('appraisals');
+      }
+    }
+  }, [user, currentView]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -102,44 +112,74 @@ export default function Appraisals() {
 
   const stats = getStats();
 
-  const menuItems = [
+  // Check if user has admin access - only admin and superadmin roles
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  
+  // Debug log to check user permissions (remove in production)
+  if (user) {
+    console.log('User permissions check:', {
+      userId: user.id,
+      role: user.role,
+      isAdmin: user.isAdmin,
+      calculatedIsAdmin: isAdmin
+    });
+  }
+  
+  const allMenuItems = [
     {
       id: 'dashboard' as ViewType,
       label: 'Dashboard',
       icon: BarChart3,
-      description: 'Overview and key metrics'
+      description: 'Overview and key metrics',
+      adminOnly: true
     },
     {
       id: 'cycles' as ViewType,
       label: 'Cycles',
       icon: Calendar,
-      description: 'Manage appraisal cycles'
+      description: 'Manage appraisal cycles',
+      adminOnly: true
     },
     {
       id: 'appraisals' as ViewType,
       label: 'Appraisals',
       icon: FileText,
-      description: 'Review and manage appraisals'
+      description: 'Review and manage appraisals',
+      adminOnly: false
     },
     {
       id: 'templates' as ViewType,
       label: 'Templates',
       icon: Edit,
-      description: 'Create and manage templates'
+      description: 'Create and manage templates',
+      adminOnly: true
     },
     {
       id: 'feedback360' as ViewType,
       label: '360° Feedback',
       icon: Users,
-      description: 'Multi-rater feedback system'
+      description: 'Multi-rater feedback system',
+      adminOnly: false
     },
     {
       id: 'analytics' as ViewType,
       label: 'Analytics',
       icon: TrendingUp,
-      description: 'Reports and insights'
+      description: 'Reports and insights',
+      adminOnly: true
     }
   ];
+
+  // Filter menu items based on user permissions
+  const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
+
+  // Check if current view is admin-only and user doesn't have access
+  const currentMenuItem = allMenuItems.find(item => item.id === currentView);
+  if (currentMenuItem?.adminOnly && !isAdmin) {
+    // Redirect to first available view
+    const firstAvailableView = menuItems[0]?.id || 'appraisals';
+    setCurrentView(firstAvailableView);
+  }
 
   if (loading) {
     return (

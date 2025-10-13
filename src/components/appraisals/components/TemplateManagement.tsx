@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Edit, 
-  Trash2,
+  Trash2, 
   Eye, 
   FileText,
   Star,
@@ -66,6 +66,31 @@ export function TemplateManagement() {
     }
   };
 
+  const handleUpdateTemplate = async (templateData: Omit<AppraisalTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!editingTemplate) return;
+    
+    try {
+      setLoading(true);
+      await AppraisalService.updateTemplate(editingTemplate.id, templateData);
+      setEditingTemplate(null);
+      const questionCount = templateData.sections.reduce((total, s) => total + s.questions.length, 0);
+      setSuccessMessage({
+        title: 'Template Updated!',
+        message: `${templateData.name} has been successfully updated.`,
+        details: [
+          { label: 'Sections', value: templateData.sections.length },
+          { label: 'Questions', value: questionCount }
+        ]
+      });
+      loadTemplates();
+    } catch (error) {
+      console.error('Error updating template:', error);
+      alert('Failed to update template');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteTemplate = async () => {
     if (!deletingTemplate) return;
     
@@ -111,13 +136,13 @@ export function TemplateManagement() {
             <Sparkles className="h-5 w-5" />
             Pre-Built Templates
           </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="h-5 w-5" />
-            Create Template
-          </button>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          <Plus className="h-5 w-5" />
+          Create Template
+        </button>
         </div>
       </div>
 
@@ -132,12 +157,27 @@ export function TemplateManagement() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{template.name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
                   {template.isDefault && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       <Star className="h-3 w-3" />
                       Default
                     </span>
                   )}
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      template.reviewType === 'self' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : template.reviewType === 'manager' 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {template.reviewType === 'self' 
+                        ? 'Self Review' 
+                        : template.reviewType === 'manager' 
+                        ? 'Manager Review' 
+                        : 'Both Reviews'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -205,7 +245,7 @@ export function TemplateManagement() {
         <TemplateForm
           template={editingTemplate}
           onSubmit={editingTemplate ? 
-            (data) => {/* Handle update */} : 
+            handleUpdateTemplate : 
             handleCreateTemplate
           }
           onClose={() => {
@@ -278,11 +318,13 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
   const [formData, setFormData] = useState<{
     name: string;
     description: string;
+    reviewType: 'self' | 'manager' | 'both';
     isDefault: boolean;
     sections: AppraisalSection[];
   }>({
     name: template?.name || '',
     description: template?.description || '',
+    reviewType: template?.reviewType || 'both',
     isDefault: template?.isDefault || false,
     sections: template?.sections || []
   });
@@ -316,7 +358,6 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
       text: '',
       type: 'rating',
       required: true,
-      appliesTo: ['self','manager','hr'],
       order: formData.sections[sectionIndex].questions.length
     };
     const updatedSections = [...formData.sections];
@@ -387,6 +428,57 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
               rows={3}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
+          </div>
+
+          {/* Review Type Checklist */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Review Type
+            </label>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="reviewType-self"
+                  name="reviewType"
+                  value="self"
+                  checked={formData.reviewType === 'self'}
+                  onChange={(e) => setFormData({ ...formData, reviewType: e.target.value as 'self' | 'manager' | 'both' })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                />
+                <label htmlFor="reviewType-self" className="ml-2 block text-sm text-gray-900">
+                  Self Review Only
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="reviewType-manager"
+                  name="reviewType"
+                  value="manager"
+                  checked={formData.reviewType === 'manager'}
+                  onChange={(e) => setFormData({ ...formData, reviewType: e.target.value as 'self' | 'manager' | 'both' })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                />
+                <label htmlFor="reviewType-manager" className="ml-2 block text-sm text-gray-900">
+                  Manager Review Only
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="reviewType-both"
+                  name="reviewType"
+                  value="both"
+                  checked={formData.reviewType === 'both'}
+                  onChange={(e) => setFormData({ ...formData, reviewType: e.target.value as 'self' | 'manager' | 'both' })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                />
+                <label htmlFor="reviewType-both" className="ml-2 block text-sm text-gray-900">
+                  Both Self & Manager Review
+                </label>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center">
@@ -488,7 +580,7 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
                                 className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                                 required
                               />
-                              <div className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-2">
                                 <select
                                   value={question.type}
                                   onChange={(e) => updateQuestion(sectionIndex, questionIndex, 'type', e.target.value)}
@@ -509,29 +601,119 @@ function TemplateForm({ template, onSubmit, onClose, loading }: TemplateFormProp
                                   />
                                   Required
                                 </label>
-
-                                {/* Applies To Checklist */}
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className="text-gray-500">Applies to:</span>
-                                  {(['self','manager','hr'] as const).map(role => (
-                                    <label key={role} className="inline-flex items-center gap-1">
-                                      <input
-                                        type="checkbox"
-                                        className="h-3 w-3"
-                                        checked={(question.appliesTo || ['self','manager','hr']).includes(role)}
-                                        onChange={(e) => {
-                                          const current = question.appliesTo || ['self','manager','hr'];
-                                          const next = e.target.checked
-                                            ? Array.from(new Set([...current, role]))
-                                            : current.filter(r => r !== role);
-                                          updateQuestion(sectionIndex, questionIndex, 'appliesTo', next);
-                                        }}
-                                      />
-                                      <span className="capitalize">{role}</span>
-                                    </label>
-                                  ))}
-                                </div>
                               </div>
+
+                              {/* Multiple Choice Options */}
+                              {question.type === 'multiple-choice' && (
+                                <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <label className="text-xs font-medium text-blue-800">Answer Options:</label>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const currentOptions = question.options || [];
+                                        const newOptions = [...currentOptions, ''];
+                                        updateQuestion(sectionIndex, questionIndex, 'options', newOptions);
+                                      }}
+                                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                    >
+                                      + Add Option
+                                    </button>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {(question.options || []).map((option: string, optionIndex: number) => (
+                                      <div key={optionIndex} className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={option}
+                                          onChange={(e) => {
+                                            const newOptions = [...(question.options || [])];
+                                            newOptions[optionIndex] = e.target.value;
+                                            updateQuestion(sectionIndex, questionIndex, 'options', newOptions);
+                                          }}
+                                          placeholder={`Option ${optionIndex + 1}`}
+                                          className="flex-1 border border-blue-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newOptions = (question.options || []).filter((_, idx) => idx !== optionIndex);
+                                            updateQuestion(sectionIndex, questionIndex, 'options', newOptions);
+                                          }}
+                                          className="text-red-600 hover:text-red-800"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    {(!question.options || question.options.length === 0) && (
+                                      <p className="text-xs text-blue-600 italic">No options added yet. Click "Add Option" to create choices.</p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Scale Configuration */}
+                              {question.type === 'scale' && (
+                                <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                                  <label className="text-xs font-medium text-green-800 mb-2 block">Scale Configuration:</label>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="text-xs text-green-700">Min Value:</label>
+                                      <input
+                                        type="number"
+                                        value={question.scale?.min || 1}
+                                        onChange={(e) => {
+                                          const newScale = {
+                                            ...question.scale,
+                                            min: parseInt(e.target.value) || 1,
+                                            max: question.scale?.max || 5,
+                                            labels: question.scale?.labels || ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent']
+                                          };
+                                          updateQuestion(sectionIndex, questionIndex, 'scale', newScale);
+                                        }}
+                                        className="w-full border border-green-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-green-700">Max Value:</label>
+                                      <input
+                                        type="number"
+                                        value={question.scale?.max || 5}
+                                        onChange={(e) => {
+                                          const newScale = {
+                                            ...question.scale,
+                                            min: question.scale?.min || 1,
+                                            max: parseInt(e.target.value) || 5,
+                                            labels: question.scale?.labels || ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent']
+                                          };
+                                          updateQuestion(sectionIndex, questionIndex, 'scale', newScale);
+                                        }}
+                                        className="w-full border border-green-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="mt-2">
+                                    <label className="text-xs text-green-700">Labels (comma-separated):</label>
+                                    <input
+                                      type="text"
+                                      value={(question.scale?.labels || []).join(', ')}
+                                      onChange={(e) => {
+                                        const labels = e.target.value.split(',').map(l => l.trim()).filter(l => l);
+                                        const newScale = {
+                                          ...question.scale,
+                                          min: question.scale?.min || 1,
+                                          max: question.scale?.max || 5,
+                                          labels
+                                        };
+                                        updateQuestion(sectionIndex, questionIndex, 'scale', newScale);
+                                      }}
+                                      placeholder="Poor, Fair, Good, Very Good, Excellent"
+                                      className="w-full border border-green-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                    />
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <button
                               type="button"
@@ -585,6 +767,7 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
     {
       name: 'General Employee Performance Review',
       description: 'Comprehensive performance evaluation for general employees covering job responsibilities, competencies, and development',
+      reviewType: 'both',
       isDefault: false,
       createdBy: user?.id || '',
       sections: [
@@ -706,6 +889,7 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
     {
       name: 'Manager Performance Review',
       description: 'Specialized evaluation for managers focusing on leadership, team management, and strategic thinking',
+      reviewType: 'manager',
       isDefault: false,
       createdBy: user?.id || '',
       sections: [
@@ -803,6 +987,14 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
               type: 'rating',
               required: true,
               order: 2
+            },
+            {
+              id: 'q11',
+              text: 'What is the primary leadership style demonstrated?',
+              type: 'multiple-choice',
+              required: true,
+              options: ['Transformational', 'Transactional', 'Servant Leadership', 'Democratic', 'Autocratic'],
+              order: 3
             }
           ]
         },
@@ -834,6 +1026,7 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
     {
       name: 'Technical Skills Assessment',
       description: 'Focused evaluation for technical roles including software development, engineering, and IT',
+      reviewType: 'both',
       isDefault: false,
       createdBy: user?.id || '',
       sections: [
@@ -901,6 +1094,14 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
               type: 'text',
               required: false,
               order: 2
+            },
+            {
+              id: 'q8',
+              text: 'Which development methodology do you primarily use?',
+              type: 'multiple-choice',
+              required: true,
+              options: ['Agile/Scrum', 'Waterfall', 'DevOps', 'Lean', 'Kanban', 'Other'],
+              order: 3
             }
           ]
         },
@@ -962,6 +1163,7 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
     {
       name: 'Sales Performance Review',
       description: 'Comprehensive evaluation for sales professionals focused on targets, customer relationships, and sales skills',
+      reviewType: 'both',
       isDefault: false,
       createdBy: user?.id || '',
       sections: [
@@ -1090,6 +1292,7 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
     {
       name: 'Leadership Assessment',
       description: 'Specialized evaluation for senior leaders and executives focusing on vision, strategy, and organizational impact',
+      reviewType: 'manager',
       isDefault: false,
       createdBy: user?.id || '',
       sections: [
@@ -1256,6 +1459,21 @@ function PreBuiltTemplatesModal({ onClose, onSelect }: PreBuiltTemplatesModalPro
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h4 className="font-semibold text-gray-900 mb-2">{template.name}</h4>
+                    <div className="mb-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        template.reviewType === 'self' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : template.reviewType === 'manager' 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {template.reviewType === 'self' 
+                          ? 'Self Review Only' 
+                          : template.reviewType === 'manager' 
+                          ? 'Manager Review Only' 
+                          : 'Both Self & Manager Review'}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600 mb-4">{template.description}</p>
                   </div>
                   {selectedTemplate === index && (
@@ -1352,6 +1570,19 @@ function ViewTemplateModal({ template, onClose }: ViewTemplateModalProps) {
                 Default Template
               </span>
             )}
+            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
+              template.reviewType === 'self' 
+                ? 'bg-blue-100 text-blue-800' 
+                : template.reviewType === 'manager' 
+                ? 'bg-purple-100 text-purple-800' 
+                : 'bg-orange-100 text-orange-800'
+            }`}>
+              {template.reviewType === 'self' 
+                ? 'Self Review Only' 
+                : template.reviewType === 'manager' 
+                ? 'Manager Review Only' 
+                : 'Both Self & Manager Review'}
+            </span>
             <span className="text-sm text-gray-600">
               {template.sections.length} sections • {template.sections.reduce((total, s) => total + s.questions.length, 0)} questions
             </span>
@@ -1394,7 +1625,7 @@ function ViewTemplateModal({ template, onClose }: ViewTemplateModalProps) {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-4 mt-2 flex-wrap">
+                          <div className="flex items-center gap-4 mt-2">
                             <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
                               {question.type.charAt(0).toUpperCase() + question.type.slice(1).replace('-', ' ')}
                             </span>
@@ -1403,9 +1634,6 @@ function ViewTemplateModal({ template, onClose }: ViewTemplateModalProps) {
                                 Required
                               </span>
                             )}
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                              Applies: {(question.appliesTo || ['self','manager','hr']).map(r => r.toUpperCase()).join(', ')}
-                            </span>
                           </div>
 
                           {question.type === 'multiple-choice' && question.options && (

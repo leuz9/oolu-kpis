@@ -446,6 +446,7 @@ export interface AppraisalTemplate {
   id: string;
   name: string;
   description: string;
+  reviewType: 'self' | 'manager' | 'both';
   sections: AppraisalSection[];
   isDefault: boolean;
   createdBy: string;
@@ -467,8 +468,6 @@ export interface AppraisalQuestion {
   text: string;
   type: 'rating' | 'text' | 'multiple-choice' | 'yes-no' | 'scale';
   required: boolean;
-  // Which review types this question applies to; defaults to all if omitted
-  appliesTo?: Array<'self' | 'manager' | 'hr'>;
   options?: string[]; // For multiple-choice questions
   scale?: {
     min: number;

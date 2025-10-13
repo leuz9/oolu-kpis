@@ -13,7 +13,8 @@ import {
   Settings,
   CheckSquare,
   CheckCircle,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AppraisalService } from '../../../services/appraisalService';
@@ -48,8 +49,10 @@ interface CycleManagementProps {
 }
 
 export function CycleManagement({ cycles, onCyclesChange, onRefresh }: CycleManagementProps) {
+  const { user } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCycle, setEditingCycle] = useState<AppraisalCycle | null>(null);
+  const [deletingCycle, setDeletingCycle] = useState<AppraisalCycle | null>(null);
   const [loading, setLoading] = useState(false);
   const [showBulkCreateModal, setShowBulkCreateModal] = useState<AppraisalCycle | null>(null);
   const [successMessage, setSuccessMessage] = useState<{ title: string; message: string; details?: any[] } | null>(null);
@@ -93,6 +96,30 @@ export function CycleManagement({ cycles, onCyclesChange, onRefresh }: CycleMana
     } catch (error) {
       console.error('Error updating cycle:', error);
       alert('Failed to update cycle');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCycle = async () => {
+    if (!deletingCycle) return;
+    
+    try {
+      setLoading(true);
+      await AppraisalService.deleteCycle(deletingCycle.id);
+      setDeletingCycle(null);
+      setSuccessMessage({
+        title: 'Cycle Deleted!',
+        message: `${deletingCycle.name} has been successfully deleted.`,
+        details: [
+          { label: 'Year', value: deletingCycle.year },
+          { label: 'Status', value: deletingCycle.status.charAt(0).toUpperCase() + deletingCycle.status.slice(1) }
+        ]
+      });
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting cycle:', error);
+      alert('Failed to delete cycle');
     } finally {
       setLoading(false);
     }
@@ -170,7 +197,7 @@ export function CycleManagement({ cycles, onCyclesChange, onRefresh }: CycleMana
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setEditingCycle(cycle)}
                 className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
@@ -207,6 +234,18 @@ export function CycleManagement({ cycles, onCyclesChange, onRefresh }: CycleMana
                 <Users className="h-4 w-4" />
                 Bulk Create
               </button>
+
+              {/* Delete button - Only for superadmin */}
+              {user?.role === 'superadmin' && (
+                <button
+                  onClick={() => setDeletingCycle(cycle)}
+                  className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                  title="Delete cycle (Super Admin only)"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -254,6 +293,16 @@ export function CycleManagement({ cycles, onCyclesChange, onRefresh }: CycleMana
               console.warn('Notification after bulk create skipped');
             }
           }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingCycle && (
+        <DeleteConfirmationModal
+          cycle={deletingCycle}
+          onConfirm={handleDeleteCycle}
+          onCancel={() => setDeletingCycle(null)}
+          loading={loading}
         />
       )}
 
@@ -408,7 +457,7 @@ function BulkCreateAppraisalsModal({ cycle, onClose, onSuccess }: BulkCreateAppr
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
-  const [importObjectives, setImportObjectives] = useState(true);
+  const [importObjectives, setImportObjectives] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -659,6 +708,76 @@ function BulkCreateAppraisalsModal({ cycle, onClose, onSuccess }: BulkCreateAppr
           >
             <CheckSquare className="h-4 w-4" />
             {loading ? 'Creating...' : `Create ${selectedUsers.length} Appraisals`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Delete Confirmation Modal Component
+interface DeleteConfirmationModalProps {
+  cycle: AppraisalCycle;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+function DeleteConfirmationModal({ cycle, onConfirm, onCancel, loading }: DeleteConfirmationModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-md shadow-xl">
+        <div className="p-6">
+          <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-red-100">
+            <Trash2 className="h-6 w-6 text-red-600" />
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+            Delete Cycle?
+          </h3>
+          <p className="text-sm text-gray-600 text-center mb-4">
+            Are you sure you want to delete <strong>"{cycle.name}"</strong>? This action cannot be undone.
+          </p>
+
+          {/* Cycle Details */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <div className="text-sm text-red-800">
+              <p><strong>Year:</strong> {cycle.year}</p>
+              <p><strong>Status:</strong> {cycle.status.charAt(0).toUpperCase() + cycle.status.slice(1)}</p>
+              <p><strong>Start Date:</strong> {formatDate(cycle.startDate)}</p>
+              <p><strong>End Date:</strong> {formatDate(cycle.endDate)}</p>
+            </div>
+          </div>
+
+          {/* Warning */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div className="flex gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800">Warning</p>
+                <p className="text-xs text-yellow-700 mt-1">
+                  Deleting this cycle will permanently remove all associated data. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 rounded-b-lg">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="px-4 py-2 text-gray-700 hover:text-gray-900 disabled:opacity-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+          >
+            {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+            Delete Cycle
           </button>
         </div>
       </div>

@@ -90,6 +90,16 @@ export class AppraisalService {
     }
   }
 
+  static async deleteCycle(id: string): Promise<void> {
+    try {
+      const cycleRef = doc(db, COLLECTIONS.CYCLES, id);
+      await deleteDoc(cycleRef);
+    } catch (error) {
+      console.error('Error deleting appraisal cycle:', error);
+      throw error;
+    }
+  }
+
   // Appraisal Templates
   static async getTemplates(): Promise<AppraisalTemplate[]> {
     try {
@@ -247,10 +257,15 @@ export class AppraisalService {
         submittedAt: serverTimestamp()
       });
 
-      // Get current appraisal to calculate overall rating
+      // Get current appraisal and template to determine next status
       const appraisalRef = doc(db, COLLECTIONS.APPRAISALS, appraisalId);
       const appraisalDoc = await getDoc(appraisalRef);
       const currentAppraisal = appraisalDoc.data() as Appraisal;
+      
+      // Get template to check reviewType
+      const templateRef = doc(db, COLLECTIONS.TEMPLATES, currentAppraisal.templateId);
+      const templateDoc = await getDoc(templateRef);
+      const template = templateDoc.data() as AppraisalTemplate;
 
       // Update the appraisal with the response
       const updateData: any = {
@@ -259,10 +274,22 @@ export class AppraisalService {
 
       if (type === 'self') {
         updateData.selfReview = response;
-        updateData.status = 'manager-review';
+        // For "both" type: go to manager-review, for "self" type: complete
+        if (template?.reviewType === 'both') {
+          updateData.status = 'manager-review';
+        } else if (template?.reviewType === 'self') {
+          updateData.status = 'completed';
+          updateData.completedAt = serverTimestamp();
+        }
       } else if (type === 'manager') {
         updateData.managerReview = response;
-        updateData.status = 'hr-review';
+        // For "both" type: go to hr-review, for "manager" type: complete
+        if (template?.reviewType === 'both') {
+          updateData.status = 'hr-review';
+        } else if (template?.reviewType === 'manager') {
+          updateData.status = 'completed';
+          updateData.completedAt = serverTimestamp();
+        }
         
         // Calculate overall rating when manager review is submitted
         const allResponses = [
