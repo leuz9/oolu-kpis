@@ -3,9 +3,7 @@ import {
   Edit, 
   Key, 
   Link, 
-  Send, 
-  Lock, 
-  Eye, 
+  Globe, 
   UserX 
 } from 'lucide-react';
 import { User } from '../../../types';
@@ -16,6 +14,7 @@ interface UserActionsProps {
   onDelete: (userId: string) => void;
   onPasswordReset: (userId: string) => void;
   onLinkTeamMember: (user: User) => void;
+  onSetCountry: (user: User) => void;
   onClose: () => void;
 }
 
@@ -25,6 +24,7 @@ export default function UserActions({
   onDelete,
   onPasswordReset,
   onLinkTeamMember,
+  onSetCountry,
   onClose
 }: UserActionsProps) {
   const isSuperadmin = user.role === 'superadmin';
@@ -81,39 +81,19 @@ export default function UserActions({
         </button>
 
         <button
+          onClick={() => {
+            onSetCountry(user);
+            onClose();
+          }}
+          disabled={isSuperadmin}
           className={`flex items-center w-full px-4 py-2 text-sm ${
             isSuperadmin 
               ? 'text-gray-400 cursor-not-allowed bg-gray-50' 
               : 'text-gray-700 hover:bg-gray-100'
           }`}
-          disabled={isSuperadmin}
         >
-          <Send className="h-4 w-4 mr-3" />
-          Send Welcome Email
-        </button>
-
-        <button
-          className={`flex items-center w-full px-4 py-2 text-sm ${
-            isSuperadmin 
-              ? 'text-gray-400 cursor-not-allowed bg-gray-50' 
-              : 'text-gray-700 hover:bg-gray-100'
-          }`}
-          disabled={isSuperadmin}
-        >
-          <Lock className="h-4 w-4 mr-3" />
-          Manage Permissions
-        </button>
-
-        <button
-          className={`flex items-center w-full px-4 py-2 text-sm ${
-            isSuperadmin 
-              ? 'text-gray-400 cursor-not-allowed bg-gray-50' 
-              : 'text-gray-700 hover:bg-gray-100'
-          }`}
-          disabled={isSuperadmin}
-        >
-          <Eye className="h-4 w-4 mr-3" />
-          View Activity
+          <Globe className="h-4 w-4 mr-3" />
+          Set Country
         </button>
 
         <button

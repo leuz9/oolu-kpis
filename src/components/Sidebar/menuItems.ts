@@ -1,4 +1,4 @@
-import { Home, Target, Users, Book, Bell, UserCog, BarChart3, FileText, Shield, Building2, Calendar, MessageSquare, Link2, Database, FileCode, CheckSquare, FolderKanban, Book as AddressBook, Award } from 'lucide-react';
+import { Home, Target, Users, Book, Bell, UserCog, BarChart3, FileText, Shield, Building2, Calendar, MessageSquare, Link2, Database, FileCode, CheckSquare, FolderKanban, Book as AddressBook, Award, Globe } from 'lucide-react';
 import type { MenuItem } from './types';
 
 export const menuItems: MenuItem[] = [
@@ -21,6 +21,7 @@ export const menuItems: MenuItem[] = [
   { icon: FileText, label: 'Reports', path: '/reports', adminOnly: true },
   { icon: Shield, label: 'Security', path: '/security', adminOnly: true },
   { icon: Building2, label: 'Departments', path: '/departments', adminOnly: true },
+  { icon: Globe, label: 'Countries', path: '/countries', adminOnly: true },
   { icon: Link2, label: 'Integrations', path: '/integrations', adminOnly: true },
   { icon: Database, label: 'API', path: '/api', adminOnly: true },
   { icon: FileCode, label: 'Support', path: 'https://chat.google.com/room/AAAA3XV7nxY?cls=7', external: true }

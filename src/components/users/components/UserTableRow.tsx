@@ -4,6 +4,12 @@ import { User } from '../../../types';
 import UserAvatar from './UserAvatar';
 import UserActions from './UserActions';
 
+interface Country {
+  id: string;
+  name: string;
+  flag: string;
+}
+
 interface UserTableRowProps {
   user: User;
   selected: boolean;
@@ -14,6 +20,8 @@ interface UserTableRowProps {
   onDelete: (userId: string) => void;
   onPasswordReset: (userId: string) => void;
   onLinkTeamMember: (user: User) => void;
+  onSetCountry: (user: User) => void;
+  countries: Country[];
 }
 
 export default function UserTableRow({
@@ -25,7 +33,9 @@ export default function UserTableRow({
   onEdit,
   onDelete,
   onPasswordReset,
-  onLinkTeamMember
+  onLinkTeamMember,
+  onSetCountry,
+  countries
 }: UserTableRowProps) {
   const isSuperadmin = user.role === 'superadmin';
 
@@ -79,6 +89,35 @@ export default function UserTableRow({
           {user.status}
         </span>
       </td>
+      <td className="px-6 py-4">
+        {(() => {
+          const userCountries = countries.filter(country => user.countryIds?.includes(country.id));
+          if (userCountries.length === 0) {
+            return <span className="text-sm text-gray-400 italic">No countries assigned</span>;
+          }
+          
+          if (userCountries.length === 1) {
+            const country = userCountries[0];
+            return (
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">{country.flag}</span>
+                <span className="text-sm text-gray-900">{country.name}</span>
+              </div>
+            );
+          }
+          
+          return (
+            <div className="flex flex-wrap gap-1">
+              {userCountries.map((country, index) => (
+                <div key={country.id} className="flex items-center space-x-1 bg-gray-100 rounded-full px-2 py-1">
+                  <span className="text-sm">{country.flag}</span>
+                  <span className="text-xs text-gray-700">{country.name}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+      </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {user.lastLogin ? (
           <div className="flex flex-col">
@@ -110,6 +149,7 @@ export default function UserTableRow({
               onDelete={onDelete}
               onPasswordReset={onPasswordReset}
               onLinkTeamMember={onLinkTeamMember}
+              onSetCountry={onSetCountry}
               onClose={() => onShowActions(null)}
             />
           )}

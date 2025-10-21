@@ -223,6 +223,16 @@ export class AppraisalService {
     }
   }
 
+  static async deleteAppraisal(id: string): Promise<void> {
+    try {
+      const appraisalRef = doc(db, COLLECTIONS.APPRAISALS, id);
+      await deleteDoc(appraisalRef);
+    } catch (error) {
+      console.error('Error deleting appraisal:', error);
+      throw error;
+    }
+  }
+
   // Helper function to calculate overall rating from responses
   private static calculateOverallRating(responses: AppraisalResponse[]): number {
     const validResponses = responses.filter(r => r && r.responses);
@@ -476,17 +486,42 @@ export class AppraisalService {
       const totalAppraisals = appraisals.length;
       const completedCount = completedAppraisals.length;
       
-      const ratings = completedAppraisals.map(a => a.overallRating).filter(r => r !== undefined) as number[];
-      const averageRating = ratings.length > 0 ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : 0;
+      // Filter valid ratings and calculate average
+      const validRatings = completedAppraisals
+        .map(a => a.overallRating)
+        .filter(r => r !== undefined && r !== null && typeof r === 'number' && !isNaN(r)) as number[];
       
-      // Rating distribution
-      const ratingDistribution: { [key: string]: number } = {};
-      ratings.forEach(rating => {
+      const averageRating = validRatings.length > 0 
+        ? validRatings.reduce((sum, rating) => sum + rating, 0) / validRatings.length 
+        : 0;
+      
+      // Rating distribution with better handling
+      const ratingDistribution: { [key: string]: number } = {
+        '1': 0,
+        '2': 0,
+        '3': 0,
+        '4': 0,
+        '5': 0
+      };
+      
+      validRatings.forEach(rating => {
         const key = Math.floor(rating).toString();
-        ratingDistribution[key] = (ratingDistribution[key] || 0) + 1;
+        if (ratingDistribution.hasOwnProperty(key)) {
+          ratingDistribution[key]++;
+        }
       });
 
-      // Department breakdown
+      // Status breakdown
+      const statusBreakdown = {
+        draft: appraisals.filter(a => a.status === 'draft').length,
+        'self-review': appraisals.filter(a => a.status === 'self-review').length,
+        'manager-review': appraisals.filter(a => a.status === 'manager-review').length,
+        'hr-review': appraisals.filter(a => a.status === 'hr-review').length,
+        completed: completedCount,
+        cancelled: appraisals.filter(a => a.status === 'cancelled').length
+      };
+
+      // Department breakdown (improved)
       const departmentBreakdown: { [department: string]: { count: number; averageRating: number } } = {};
       completedAppraisals.forEach(appraisal => {
         // This would need to be joined with user data to get department
@@ -496,7 +531,7 @@ export class AppraisalService {
           departmentBreakdown[department] = { count: 0, averageRating: 0 };
         }
         departmentBreakdown[department].count++;
-        if (appraisal.overallRating) {
+        if (appraisal.overallRating && typeof appraisal.overallRating === 'number') {
           departmentBreakdown[department].averageRating += appraisal.overallRating;
         }
       });
@@ -507,9 +542,10 @@ export class AppraisalService {
         deptData.averageRating = deptData.count > 0 ? deptData.averageRating / deptData.count : 0;
       });
 
-      // Competency gaps analysis
+      // Competency gaps analysis (improved)
       const competencyGaps = completedAppraisals
-        .flatMap(a => a.competencies)
+        .flatMap(a => a.competencies || [])
+        .filter(c => c && c.name && typeof c.rating === 'number')
         .reduce((acc, competency) => {
           const existing = acc.find(c => c.competency === competency.name);
           if (existing) {
@@ -530,6 +566,7 @@ export class AppraisalService {
         completedAppraisals: completedCount,
         averageRating,
         ratingDistribution,
+        statusBreakdown,
         departmentBreakdown,
         competencyGaps
       };

@@ -10,6 +10,7 @@ export interface User {
   managerId?: string;
   photoURL?: string | null;
   isAdmin: boolean;
+  countryIds?: string[];
   createdAt: string;
   lastLogin: string;
   lastSeen?: string;
@@ -437,6 +438,7 @@ export interface AppraisalCycle {
   endDate: string;
   status: 'draft' | 'active' | 'completed' | 'archived';
   description?: string;
+  countryIds?: string[];
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -553,6 +555,14 @@ export interface AppraisalAnalytics {
   averageRating: number;
   ratingDistribution: {
     [key: string]: number;
+  };
+  statusBreakdown?: {
+    draft: number;
+    'self-review': number;
+    'manager-review': number;
+    'hr-review': number;
+    completed: number;
+    cancelled: number;
   };
   departmentBreakdown: {
     [department: string]: {

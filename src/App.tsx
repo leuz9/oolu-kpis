@@ -25,6 +25,7 @@ import Planning from './components/planning/Planning';
 import Integrations from './components/integrations/Integrations';
 import API from './components/api/API';
 import Support from './components/support/Support';
+import Countries from './components/countries/Countries';
 import OnboardingTour from './components/onboarding/OnboardingTour';
 import UpdatePrompt from './components/UpdatePrompt';
 
@@ -122,6 +123,11 @@ function AppRoutes() {
         <Route path="/departments" element={
           <PrivateRoute adminOnly>
             <Departments />
+          </PrivateRoute>
+        } />
+        <Route path="/countries" element={
+          <PrivateRoute adminOnly>
+            <Countries />
           </PrivateRoute>
         } />
         <Route path="/planning" element={

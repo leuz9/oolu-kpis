@@ -14,12 +14,14 @@ import {
   CheckSquare,
   CheckCircle,
   X,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AppraisalService } from '../../../services/appraisalService';
 import { notificationService } from '../../../services/notificationService';
 import { userService } from '../../../services/userService';
+import { countryService } from '../../../services/countryService';
 import { SuccessModal } from './SuccessModal';
 import type { AppraisalCycle, User, AppraisalTemplate } from '../../../types';
 
@@ -194,6 +196,12 @@ export function CycleManagement({ cycles, onCyclesChange, onRefresh }: CycleMana
                 <Calendar className="h-4 w-4" />
                 <span>End: {formatDate(cycle.endDate)}</span>
               </div>
+              {cycle.countryIds && cycle.countryIds.length > 0 && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Globe className="h-4 w-4" />
+                  <span>Countries: {cycle.countryIds.length} selected</span>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -329,6 +337,8 @@ interface CycleFormProps {
 
 function CycleForm({ cycle, onSubmit, onClose, loading }: CycleFormProps) {
   const { user } = useAuth();
+  const [countries, setCountries] = useState<any[]>([]);
+  const [selectedCountryIds, setSelectedCountryIds] = useState<string[]>(cycle?.countryIds || []);
   const [formData, setFormData] = useState({
     name: cycle?.name || '',
     year: cycle?.year || new Date().getFullYear(),
@@ -338,11 +348,33 @@ function CycleForm({ cycle, onSubmit, onClose, loading }: CycleFormProps) {
     status: cycle?.status || 'draft' as AppraisalCycle['status']
   });
 
+  useEffect(() => {
+    loadCountries();
+  }, []);
+
+  const loadCountries = async () => {
+    try {
+      const fetchedCountries = await countryService.getActiveCountries();
+      setCountries(fetchedCountries);
+    } catch (error) {
+      console.error('Error loading countries:', error);
+    }
+  };
+
+  const toggleCountry = (countryId: string) => {
+    setSelectedCountryIds(prev => 
+      prev.includes(countryId) 
+        ? prev.filter(id => id !== countryId)
+        : [...prev, countryId]
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     onSubmit({
       ...formData,
+      countryIds: selectedCountryIds,
       createdBy: user.id
     });
   };
@@ -421,6 +453,36 @@ function CycleForm({ cycle, onSubmit, onClose, loading }: CycleFormProps) {
             />
           </div>
 
+          {/* Countries Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Countries ({selectedCountryIds.length} selected)
+            </label>
+            <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
+              {countries.map((country) => (
+                <label
+                  key={country.id}
+                  className="flex items-center space-x-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCountryIds.includes(country.id)}
+                    onChange={() => toggleCountry(country.id)}
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <span className="text-lg">{country.flag}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{country.name}</p>
+                    <p className="text-xs text-gray-600">{country.code}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {countries.length === 0 && (
+              <p className="text-center py-4 text-gray-500 text-sm">No countries available</p>
+            )}
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-4">
             <button
               type="button"
@@ -466,11 +528,23 @@ function BulkCreateAppraisalsModal({ cycle, onClose, onSuccess }: BulkCreateAppr
   const loadData = async () => {
     try {
       setLoading(true);
-      const [usersData, templatesData] = await Promise.all([
+      const [allUsersData, templatesData] = await Promise.all([
         userService.getAllUsers(),
         AppraisalService.getTemplates()
       ]);
-      setUsers(usersData);
+      
+      // Filter users based on cycle countries
+      let filteredUsers = allUsersData;
+      if (cycle.countryIds && cycle.countryIds.length > 0) {
+        filteredUsers = allUsersData.filter(user => {
+          // Check if user has any of the cycle's countries
+          return user.countryIds && user.countryIds.some(countryId => 
+            cycle.countryIds!.includes(countryId)
+          );
+        });
+      }
+      
+      setUsers(filteredUsers);
       setTemplates(templatesData);
       
       // Select default template
@@ -571,6 +645,23 @@ function BulkCreateAppraisalsModal({ cycle, onClose, onSuccess }: BulkCreateAppr
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Cycle Countries Info */}
+          {cycle.countryIds && cycle.countryIds.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex gap-3">
+                <Globe className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-blue-900 font-medium mb-1">
+                    Employees filtered by cycle countries
+                  </p>
+                  <p className="text-xs text-blue-800">
+                    Only employees assigned to the cycle's countries ({cycle.countryIds.length} countries) are shown.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Template Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -654,7 +745,14 @@ function BulkCreateAppraisalsModal({ cycle, onClose, onSuccess }: BulkCreateAppr
             </div>
 
             {filteredUsers.length === 0 && (
-              <p className="text-center py-4 text-gray-500">No employees found</p>
+              <div className="text-center py-4">
+                <p className="text-gray-500 mb-2">No employees found</p>
+                {cycle.countryIds && cycle.countryIds.length > 0 && (
+                  <p className="text-xs text-gray-400">
+                    No employees are assigned to the cycle's countries
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

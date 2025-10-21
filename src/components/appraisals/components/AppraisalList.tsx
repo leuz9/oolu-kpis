@@ -15,12 +15,15 @@ import {
   AlertCircle,
   XCircle,
   FileText,
-  Target
+  Target,
+  Trash2
 } from 'lucide-react';
 import { AppraisalDetailModal } from './AppraisalDetailModal';
 import { FixAppraisalsButton } from './FixAppraisalsButton';
 import { RecalculateRatingsButton } from './RecalculateRatingsButton';
 import { userService } from '../../../services/userService';
+import { useAuth } from '../../../contexts/AuthContext';
+import { AppraisalService } from '../../../services/appraisalService';
 import type { Appraisal, AppraisalCycle, User as UserType } from '../../../types';
 
 interface AppraisalListProps {
@@ -38,6 +41,7 @@ export function AppraisalList({
   onAppraisalsChange, 
   onRefresh 
 }: AppraisalListProps) {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [ratingFilter, setRatingFilter] = useState<string>('all');
@@ -46,6 +50,8 @@ export function AppraisalList({
   const [viewingReviews, setViewingReviews] = useState<Appraisal | null>(null);
   const [users, setUsers] = useState<{ [key: string]: UserType }>({});
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [deletingAppraisal, setDeletingAppraisal] = useState<Appraisal | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -187,6 +193,27 @@ export function AppraisalList({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDeleteAppraisal = async () => {
+    if (!deletingAppraisal) return;
+    
+    try {
+      setDeleting(true);
+      await AppraisalService.deleteAppraisal(deletingAppraisal.id);
+      
+      // Update local state
+      const updatedAppraisals = appraisals.filter(a => a.id !== deletingAppraisal.id);
+      onAppraisalsChange(updatedAppraisals);
+      
+      setDeletingAppraisal(null);
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting appraisal:', error);
+      alert('Failed to delete appraisal');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -372,6 +399,15 @@ export function AppraisalList({
                         >
                           <Edit className="h-4 w-4" />
                         </button>
+                        {user?.role === 'superadmin' && (
+                          <button 
+                            onClick={() => setDeletingAppraisal(appraisal)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete Appraisal"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -471,6 +507,15 @@ export function AppraisalList({
                   <Edit className="h-4 w-4" />
                   Edit
                 </button>
+                {user?.role === 'superadmin' && (
+                  <button 
+                    onClick={() => setDeletingAppraisal(appraisal)}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -503,6 +548,66 @@ export function AppraisalList({
           appraisal={viewingReviews}
           onClose={() => setViewingReviews(null)}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingAppraisal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Delete Appraisal</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-700 mb-2">
+                  Are you sure you want to delete the appraisal for:
+                </p>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="font-medium text-gray-900">{getUserName(deletingAppraisal.employeeId)}</p>
+                  <p className="text-sm text-gray-600">Manager: {getUserName(deletingAppraisal.managerId)}</p>
+                  <p className="text-sm text-gray-600">Status: {deletingAppraisal.status}</p>
+                </div>
+                <p className="text-sm text-red-600 mt-2">
+                  ⚠️ This will permanently delete all appraisal data including goals, competencies, and reviews.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setDeletingAppraisal(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAppraisal}
+                  disabled={deleting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" />
+                      Delete Appraisal
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

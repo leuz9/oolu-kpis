@@ -110,7 +110,9 @@ export function AppraisalDashboard({
     };
 
     cycleAppraisals.forEach(appraisal => {
-      statusCounts[appraisal.status]++;
+      if (statusCounts.hasOwnProperty(appraisal.status)) {
+        statusCounts[appraisal.status as keyof typeof statusCounts]++;
+      }
     });
 
     return statusCounts;
@@ -118,7 +120,7 @@ export function AppraisalDashboard({
 
   const getRatingDistribution = () => {
     const ratings = cycleAppraisals
-      .filter(a => a.overallRating)
+      .filter(a => a.overallRating && typeof a.overallRating === 'number' && !isNaN(a.overallRating))
       .map(a => a.overallRating!);
     
     const distribution = {
@@ -139,6 +141,17 @@ export function AppraisalDashboard({
     return distribution;
   };
 
+  const getAverageRating = () => {
+    const ratings = cycleAppraisals
+      .filter(a => a.overallRating && typeof a.overallRating === 'number' && !isNaN(a.overallRating))
+      .map(a => a.overallRating!);
+    
+    if (ratings.length === 0) return 0;
+    
+    const sum = ratings.reduce((acc, rating) => acc + rating, 0);
+    return sum / ratings.length;
+  };
+
   const getProgressData = () => {
     const now = new Date();
     const startDate = currentCycle ? new Date(currentCycle.startDate) : now;
@@ -155,6 +168,7 @@ export function AppraisalDashboard({
 
   const statusStats = getStatusStats();
   const ratingDistribution = getRatingDistribution();
+  const averageRating = getAverageRating();
   const progressData = getProgressData();
 
   return (
@@ -222,7 +236,10 @@ export function AppraisalDashboard({
             <div>
               <p className="text-sm font-medium text-gray-600">Average Rating</p>
               <p className="text-2xl font-bold text-gray-900">
-                {analytics?.averageRating ? analytics.averageRating.toFixed(1) : 'N/A'}
+                {averageRating > 0 ? averageRating.toFixed(1) : 'N/A'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {cycleAppraisals.filter(a => a.overallRating && typeof a.overallRating === 'number').length} rated
               </p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-full">

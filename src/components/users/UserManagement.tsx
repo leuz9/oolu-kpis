@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import { adminService } from '../../services/adminService';
+import { countryService } from '../../services/countryService';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../AccessDenied';
 import { 
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { User } from '../../types';
 import UserEditModal from './components/UserEditModal';
+import UserCountryModal from './components/UserCountryModal';
 import UserTable from './components/UserTable';
 import UserFilters from './components/UserFilters';
 import BulkActions from './components/BulkActions';
@@ -33,6 +35,8 @@ export default function UserManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showActions, setShowActions] = useState<string | null>(null);
+  const [showCountryModal, setShowCountryModal] = useState<User | null>(null);
+  const [countries, setCountries] = useState<any[]>([]);
 
   // Check if user has access
   if (!user?.role || user.role !== 'superadmin') {
@@ -45,6 +49,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    fetchCountries();
   }, []);
 
   const fetchUsers = async () => {
@@ -60,6 +65,15 @@ export default function UserManagement() {
     }
   };
 
+  const fetchCountries = async () => {
+    try {
+      const fetchedCountries = await countryService.getActiveCountries();
+      setCountries(fetchedCountries);
+    } catch (err) {
+      console.error('Error fetching countries:', err);
+    }
+  };
+
   const handleEditUser = async (userId: string, data: Partial<User>) => {
     try {
       await adminService.updateUser(userId, data);
@@ -71,6 +85,20 @@ export default function UserManagement() {
     } catch (err: any) {
       setError(err.message || 'Failed to update user. Please try again.');
       console.error('Error updating user:', err);
+    }
+  };
+
+  const handleSetCountries = async (userId: string, countryIds: string[]) => {
+    try {
+      await adminService.updateUser(userId, { countryIds });
+      setUsers(prev => prev.map(user => 
+        user.id === userId ? { ...user, countryIds } : user
+      ));
+      setSuccess(`User countries updated successfully (${countryIds.length} countries assigned)`);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update user countries. Please try again.');
+      console.error('Error updating user countries:', err);
     }
   };
 
@@ -285,6 +313,14 @@ export default function UserManagement() {
                 setEditingUser(user);
                 // Implement team member linking logic
               }}
+              onSetCountry={(user) => {
+                if (user.role === 'superadmin') {
+                  setError('Cannot modify superadmin users');
+                  return;
+                }
+                setShowCountryModal(user);
+              }}
+              countries={countries}
             />
           )}
         </div>
@@ -295,6 +331,14 @@ export default function UserManagement() {
           user={editingUser}
           onClose={() => setEditingUser(null)}
           onSave={handleEditUser}
+        />
+      )}
+
+      {showCountryModal && (
+        <UserCountryModal
+          user={showCountryModal}
+          onClose={() => setShowCountryModal(null)}
+          onSave={handleSetCountries}
         />
       )}
 

@@ -2,6 +2,12 @@ import React from 'react';
 import { User } from '../../../types';
 import UserTableRow from './UserTableRow';
 
+interface Country {
+  id: string;
+  name: string;
+  flag: string;
+}
+
 interface UserTableProps {
   users: User[];
   selectedUsers: Set<string>;
@@ -13,6 +19,8 @@ interface UserTableProps {
   onDelete: (userId: string) => void;
   onPasswordReset: (userId: string) => void;
   onLinkTeamMember: (user: User) => void;
+  onSetCountry: (user: User) => void;
+  countries: Country[];
 }
 
 export default function UserTable({
@@ -25,7 +33,9 @@ export default function UserTable({
   onEdit,
   onDelete,
   onPasswordReset,
-  onLinkTeamMember
+  onLinkTeamMember,
+  onSetCountry,
+  countries
 }: UserTableProps) {
   return (
     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -50,6 +60,9 @@ export default function UserTable({
               Status
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Country
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Last Activity
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -70,6 +83,8 @@ export default function UserTable({
               onDelete={onDelete}
               onPasswordReset={onPasswordReset}
               onLinkTeamMember={onLinkTeamMember}
+              onSetCountry={onSetCountry}
+              countries={countries}
             />
           ))}
         </tbody>

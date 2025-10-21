@@ -100,13 +100,23 @@ export default function Appraisals() {
     const completed = cycleAppraisals.filter(a => a.status === 'completed').length;
     const inProgress = cycleAppraisals.filter(a => ['self-review', 'manager-review', 'hr-review'].includes(a.status)).length;
     const pending = cycleAppraisals.filter(a => a.status === 'draft').length;
+    const cancelled = cycleAppraisals.filter(a => a.status === 'cancelled').length;
+
+    // Calculate average rating for completed appraisals
+    const completedAppraisals = cycleAppraisals.filter(a => a.status === 'completed' && a.overallRating);
+    const averageRating = completedAppraisals.length > 0 
+      ? completedAppraisals.reduce((sum, a) => sum + (a.overallRating || 0), 0) / completedAppraisals.length 
+      : 0;
 
     return {
       total: cycleAppraisals.length,
       completed,
       inProgress,
       pending,
-      completionRate: cycleAppraisals.length > 0 ? (completed / cycleAppraisals.length) * 100 : 0
+      cancelled,
+      completionRate: cycleAppraisals.length > 0 ? (completed / cycleAppraisals.length) * 100 : 0,
+      averageRating: averageRating,
+      ratedCount: completedAppraisals.length
     };
   };
 
