@@ -45,8 +45,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     { icon: BookOpen, label: 'Directory', path: '/directory' },
     { icon: Users, label: 'Team', path: '/team' },
     { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
-    { icon: Briefcase, label: 'Projects', path: '/projects', superAdminOnly: true },
-    { icon: Book, label: 'Documentation', path: '/documentation', superAdminOnly: true },
+    { icon: Briefcase, label: 'Projects', path: '/projects', adminOnly: true },
+    { icon: Book, label: 'Documentation', path: '/documentation', adminOnly: true },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     
     // Admin Only Menus
@@ -64,10 +64,6 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter(item => {
-    // For items marked as superAdminOnly, restrict to admin role with isAdmin flag
-    if (item.superAdminOnly) {
-      return user?.role === 'admin' && user?.isAdmin;
-    }
     // For items marked as adminOnly, check the isAdmin flag
     if (item.adminOnly) {
       return user?.isAdmin;

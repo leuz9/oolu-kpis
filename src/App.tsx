@@ -28,6 +28,7 @@ import Support from './components/support/Support';
 import Countries from './components/countries/Countries';
 import OnboardingTour from './components/onboarding/OnboardingTour';
 import UpdatePrompt from './components/UpdatePrompt';
+import NotFound from './components/NotFound';
 
 function PrivateRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user } = useAuth();
@@ -86,12 +87,12 @@ function AppRoutes() {
           </PrivateRoute>
         } />
         <Route path="/projects" element={
-          <PrivateRoute>
+          <PrivateRoute adminOnly>
             <Projects />
           </PrivateRoute>
         } />
         <Route path="/documentation" element={
-          <PrivateRoute>
+          <PrivateRoute adminOnly>
             <Documentation />
           </PrivateRoute>
         } />
@@ -155,6 +156,8 @@ function AppRoutes() {
             <Support />
           </PrivateRoute>
         } />
+        {/* 404 - Catch all unmatched routes */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
