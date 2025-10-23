@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -51,7 +50,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     
     // Admin Only Menus
-    { icon: UserCog, label: 'User Management', path: '/users', superAdminOnly: true },
+    { icon: UserCog, label: 'User Management', path: '/users', adminOnly: true },
     { icon: BarChart3, label: 'Analytics', path: '/analytics', adminOnly: true },
     { icon: FileText, label: 'Reports', path: '/reports', adminOnly: true },
     { icon: Shield, label: 'Security', path: '/security', adminOnly: true },
@@ -65,9 +64,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter(item => {
+    // For items marked as superAdminOnly, restrict to admin role with isAdmin flag
     if (item.superAdminOnly) {
-      return user?.role === 'superadmin';
+      return user?.role === 'admin' && user?.isAdmin;
     }
+    // For items marked as adminOnly, check the isAdmin flag
     if (item.adminOnly) {
       return user?.isAdmin;
     }
