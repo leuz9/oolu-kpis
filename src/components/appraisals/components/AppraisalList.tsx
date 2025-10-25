@@ -24,7 +24,7 @@ import { RecalculateRatingsButton } from './RecalculateRatingsButton';
 import { userService } from '../../../services/userService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AppraisalService } from '../../../services/appraisalService';
-import type { Appraisal, AppraisalCycle, User as UserType } from '../../../types';
+import type { Appraisal, AppraisalCycle, AppraisalTemplate, User as UserType } from '../../../types';
 
 interface AppraisalListProps {
   appraisals: Appraisal[];
@@ -49,12 +49,15 @@ export function AppraisalList({
   const [selectedAppraisal, setSelectedAppraisal] = useState<Appraisal | null>(null);
   const [viewingReviews, setViewingReviews] = useState<Appraisal | null>(null);
   const [users, setUsers] = useState<{ [key: string]: UserType }>({});
+  const [templates, setTemplates] = useState<{ [key: string]: AppraisalTemplate }>({});
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [deletingAppraisal, setDeletingAppraisal] = useState<Appraisal | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadUsers();
+    loadTemplates();
   }, [appraisals]);
 
   const loadUsers = async () => {
@@ -94,9 +97,48 @@ export function AppraisalList({
     }
   };
 
+  const loadTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const templateIds = new Set<string>();
+      
+      // Collect unique template IDs
+      appraisals.forEach(appraisal => {
+        if (appraisal.templateId && typeof appraisal.templateId === 'string' && appraisal.templateId.trim()) {
+          templateIds.add(appraisal.templateId);
+        }
+      });
+
+      const templatesMap: { [key: string]: AppraisalTemplate } = {};
+      await Promise.all(
+        Array.from(templateIds).map(async (templateId) => {
+          try {
+            const template = await AppraisalService.getTemplate(templateId);
+            if (template) {
+              templatesMap[templateId] = template;
+            }
+          } catch (error) {
+            console.error(`Error loading template ${templateId}:`, error);
+          }
+        })
+      );
+
+      setTemplates(templatesMap);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
   const getUserName = (userId: string): string => {
     if (!userId || typeof userId !== 'string') return 'N/A';
     return users[userId]?.displayName || userId;
+  };
+
+  const getTemplateName = (templateId: string): string => {
+    if (!templateId || typeof templateId !== 'string') return 'N/A';
+    return templates[templateId]?.name || 'Unknown Template';
   };
 
   const formatDate = (date: any): string => {
@@ -301,6 +343,9 @@ export function AppraisalList({
                     Employee
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Template
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -337,6 +382,12 @@ export function AppraisalList({
                           </div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <FileText className="h-3 w-3" />
+                        {getTemplateName(appraisal.templateId)}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appraisal.status)}`}>
@@ -437,6 +488,14 @@ export function AppraisalList({
               </div>
 
               <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Template</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <FileText className="h-3 w-3" />
+                    {getTemplateName(appraisal.templateId)}
+                  </span>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Overall Rating</span>
                   {appraisal.overallRating ? renderStars(appraisal.overallRating) : (
@@ -691,9 +750,9 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                   </div>
                   {appraisal.selfReview.responses && appraisal.selfReview.responses.length > 0 && (
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses</h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses ({appraisal.selfReview.responses.length})</h5>
                       <div className="space-y-3">
-                        {appraisal.selfReview.responses.slice(0, 3).map((response, idx) => (
+                        {appraisal.selfReview.responses.map((response, idx) => (
                           <div key={idx} className="bg-gray-50 rounded-lg p-3">
                             <p className="text-xs text-gray-600 mb-1">Question {idx + 1}</p>
                             <p className="text-sm text-gray-900">
@@ -708,11 +767,6 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                             </p>
                           </div>
                         ))}
-                        {appraisal.selfReview.responses.length > 3 && (
-                          <p className="text-xs text-gray-500 text-center">
-                            +{appraisal.selfReview.responses.length - 3} more responses
-                          </p>
-                        )}
                       </div>
                     </div>
                   )}
@@ -752,9 +806,9 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                   </div>
                   {appraisal.managerReview.responses && appraisal.managerReview.responses.length > 0 && (
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses</h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses ({appraisal.managerReview.responses.length})</h5>
                       <div className="space-y-3">
-                        {appraisal.managerReview.responses.slice(0, 3).map((response, idx) => (
+                        {appraisal.managerReview.responses.map((response, idx) => (
                           <div key={idx} className="bg-gray-50 rounded-lg p-3">
                             <p className="text-xs text-gray-600 mb-1">Question {idx + 1}</p>
                             <p className="text-sm text-gray-900">
@@ -769,11 +823,6 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                             </p>
                           </div>
                         ))}
-                        {appraisal.managerReview.responses.length > 3 && (
-                          <p className="text-xs text-gray-500 text-center">
-                            +{appraisal.managerReview.responses.length - 3} more responses
-                          </p>
-                        )}
                       </div>
                     </div>
                   )}
@@ -813,9 +862,9 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                   </div>
                   {appraisal.hrReview.responses && appraisal.hrReview.responses.length > 0 && (
                     <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses</h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses ({appraisal.hrReview.responses.length})</h5>
                       <div className="space-y-3">
-                        {appraisal.hrReview.responses.slice(0, 3).map((response, idx) => (
+                        {appraisal.hrReview.responses.map((response, idx) => (
                           <div key={idx} className="bg-gray-50 rounded-lg p-3">
                             <p className="text-xs text-gray-600 mb-1">Question {idx + 1}</p>
                             <p className="text-sm text-gray-900">
@@ -830,11 +879,6 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                             </p>
                           </div>
                         ))}
-                        {appraisal.hrReview.responses.length > 3 && (
-                          <p className="text-xs text-gray-500 text-center">
-                            +{appraisal.hrReview.responses.length - 3} more responses
-                          </p>
-                        )}
                       </div>
                     </div>
                   )}
