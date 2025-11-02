@@ -13,8 +13,6 @@ interface UserTableProps {
   selectedUsers: Set<string>;
   onSelectUser: (userId: string) => void;
   onSelectAll: (selected: boolean) => void;
-  onShowActions: (userId: string | null) => void;
-  showActions: string | null;
   onEdit: (user: User) => void;
   onDelete: (userId: string) => void;
   onPasswordReset: (userId: string) => void;
@@ -28,8 +26,6 @@ export default function UserTable({
   selectedUsers,
   onSelectUser,
   onSelectAll,
-  onShowActions,
-  showActions,
   onEdit,
   onDelete,
   onPasswordReset,
@@ -77,8 +73,6 @@ export default function UserTable({
               user={user}
               selected={selectedUsers.has(user.id)}
               onSelect={onSelectUser}
-              showActions={showActions === user.id}
-              onShowActions={onShowActions}
               onEdit={onEdit}
               onDelete={onDelete}
               onPasswordReset={onPasswordReset}

@@ -1,8 +1,7 @@
 import React from 'react';
-import { MoreVertical } from 'lucide-react';
+import { Edit, Key, Link, Globe, UserX } from 'lucide-react';
 import { User } from '../../../types';
 import UserAvatar from './UserAvatar';
-import UserActions from './UserActions';
 
 interface Country {
   id: string;
@@ -14,8 +13,6 @@ interface UserTableRowProps {
   user: User;
   selected: boolean;
   onSelect: (userId: string) => void;
-  showActions: boolean;
-  onShowActions: (userId: string | null) => void;
   onEdit: (user: User) => void;
   onDelete: (userId: string) => void;
   onPasswordReset: (userId: string) => void;
@@ -28,8 +25,6 @@ export default function UserTableRow({
   user,
   selected,
   onSelect,
-  showActions,
-  onShowActions,
   onEdit,
   onDelete,
   onPasswordReset,
@@ -130,29 +125,72 @@ export default function UserTableRow({
           'Never'
         )}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <div className="relative inline-block text-left">
+      <td className="px-6 py-4 whitespace-nowrap text-right">
+        <div className="flex items-center justify-end space-x-2">
           <button
-            onClick={() => onShowActions(showActions ? null : user.id)}
-            className={`p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 ${
-              isSuperadmin ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            onClick={() => onEdit(user)}
             disabled={isSuperadmin}
+            className={`p-2 rounded-lg transition-colors ${
+              isSuperadmin 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
+            }`}
+            title="Edit User"
           >
-            <MoreVertical className="h-5 w-5" />
+            <Edit className="h-4 w-4" />
           </button>
-
-          {showActions && (
-            <UserActions
-              user={user}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onPasswordReset={onPasswordReset}
-              onLinkTeamMember={onLinkTeamMember}
-              onSetCountry={onSetCountry}
-              onClose={() => onShowActions(null)}
-            />
-          )}
+          
+          <button
+            onClick={() => onPasswordReset(user.id)}
+            disabled={isSuperadmin}
+            className={`p-2 rounded-lg transition-colors ${
+              isSuperadmin 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-amber-600 hover:bg-amber-50 hover:text-amber-700'
+            }`}
+            title="Reset Password"
+          >
+            <Key className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => onLinkTeamMember(user)}
+            disabled={isSuperadmin}
+            className={`p-2 rounded-lg transition-colors ${
+              isSuperadmin 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-purple-600 hover:bg-purple-50 hover:text-purple-700'
+            }`}
+            title="Link Team Member"
+          >
+            <Link className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => onSetCountry(user)}
+            disabled={isSuperadmin}
+            className={`p-2 rounded-lg transition-colors ${
+              isSuperadmin 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-green-600 hover:bg-green-50 hover:text-green-700'
+            }`}
+            title="Set Country"
+          >
+            <Globe className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => onDelete(user.id)}
+            disabled={isSuperadmin}
+            className={`p-2 rounded-lg transition-colors ${
+              isSuperadmin 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-red-600 hover:bg-red-50 hover:text-red-700'
+            }`}
+            title="Delete User"
+          >
+            <UserX className="h-4 w-4" />
+          </button>
         </div>
       </td>
     </tr>

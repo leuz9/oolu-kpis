@@ -34,7 +34,6 @@ export default function UserManagement() {
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
-  const [showActions, setShowActions] = useState<string | null>(null);
   const [showCountryModal, setShowCountryModal] = useState<User | null>(null);
   const [countries, setCountries] = useState<any[]>([]);
 
@@ -185,7 +184,7 @@ export default function UserManagement() {
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
       <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
@@ -286,8 +285,6 @@ export default function UserManagement() {
                 const selectableUsers = filteredUsers.filter(u => u.role !== 'superadmin');
                 setSelectedUsers(selected ? new Set(selectableUsers.map(u => u.id)) : new Set());
               }}
-              showActions={showActions}
-              onShowActions={setShowActions}
               onEdit={setEditingUser}
               onDelete={(userId) => {
                 const user = users.find(u => u.id === userId);
