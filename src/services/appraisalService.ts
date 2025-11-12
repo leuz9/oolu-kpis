@@ -164,7 +164,7 @@ export class AppraisalService {
   }
 
   // Appraisals
-  static async getAppraisals(cycleId?: string, employeeId?: string): Promise<Appraisal[]> {
+  static async getAppraisals(cycleId?: string, employeeId?: string, managerId?: string): Promise<Appraisal[]> {
     try {
       const appraisalsRef = collection(db, COLLECTIONS.APPRAISALS);
       let q = query(appraisalsRef, orderBy('createdAt', 'desc'));
@@ -174,6 +174,9 @@ export class AppraisalService {
       }
       if (employeeId) {
         q = query(q, where('employeeId', '==', employeeId));
+      }
+      if (managerId) {
+        q = query(q, where('managerId', '==', managerId));
       }
 
       const snapshot = await getDocs(q);
@@ -271,11 +274,25 @@ export class AppraisalService {
       // Get current appraisal and template to determine next status
       const appraisalRef = doc(db, COLLECTIONS.APPRAISALS, appraisalId);
       const appraisalDoc = await getDoc(appraisalRef);
+      
+      if (!appraisalDoc.exists()) {
+        throw new Error('Appraisal not found');
+      }
+      
       const currentAppraisal = appraisalDoc.data() as Appraisal;
+      
+      if (!currentAppraisal.templateId) {
+        throw new Error('Appraisal template ID is missing');
+      }
       
       // Get template to check reviewType
       const templateRef = doc(db, COLLECTIONS.TEMPLATES, currentAppraisal.templateId);
       const templateDoc = await getDoc(templateRef);
+      
+      if (!templateDoc.exists()) {
+        throw new Error(`Template not found: ${currentAppraisal.templateId}`);
+      }
+      
       const template = templateDoc.data() as AppraisalTemplate;
 
       // Update the appraisal with the response

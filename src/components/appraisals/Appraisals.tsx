@@ -57,11 +57,44 @@ export default function Appraisals() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [cyclesData, appraisalsData] = await Promise.all([
-        AppraisalService.getCycles(),
-        AppraisalService.getAppraisals()
-      ]);
       
+      // Debug log
+      console.log('=== Appraisals.tsx loadData Debug ===');
+      console.log('User ID:', user?.id);
+      console.log('User Role:', user?.role);
+      
+      let appraisalsData;
+      if (user?.role === 'employee') {
+        // Employees see only their own appraisals
+        console.log('Loading appraisals for employee:', user.id);
+        appraisalsData = await AppraisalService.getAppraisals(undefined, user.id);
+      } else if (user?.role === 'manager') {
+        // Managers see appraisals they manage AND their own appraisals as employee
+        console.log('Loading appraisals for manager:', user.id);
+        const [managedAppraisals, ownAppraisals] = await Promise.all([
+          AppraisalService.getAppraisals(undefined, undefined, user.id),
+          AppraisalService.getAppraisals(undefined, user.id)
+        ]);
+        // Merge and deduplicate by ID
+        const allAppraisals = [...managedAppraisals, ...ownAppraisals];
+        const uniqueAppraisals = Array.from(
+          new Map(allAppraisals.map(a => [a.id, a])).values()
+        );
+        appraisalsData = uniqueAppraisals;
+        console.log('Managed appraisals:', managedAppraisals.length);
+        console.log('Own appraisals (as employee):', ownAppraisals.length);
+        console.log('Total unique appraisals:', appraisalsData.length);
+      } else {
+        // Admins see all appraisals
+        console.log('Loading all appraisals (admin)');
+        appraisalsData = await AppraisalService.getAppraisals();
+      }
+      
+      console.log('Loaded appraisals:', appraisalsData.length);
+      console.log('Appraisals data:', appraisalsData);
+      console.log('====================================');
+      
+      const cyclesData = await AppraisalService.getCycles();
       setCycles(cyclesData);
       setAppraisals(appraisalsData);
       

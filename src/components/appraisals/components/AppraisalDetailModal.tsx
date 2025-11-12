@@ -42,6 +42,25 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
   const [reviewType, setReviewType] = useState<'self' | 'manager' | 'hr'>('self');
   const [successMessage, setSuccessMessage] = useState<{ title: string; message: string; details?: any[] } | null>(null);
 
+  // Check if current user is viewing their own appraisal (as employee)
+  // This includes managers viewing their own self-review
+  const isEmployeeViewingOwnAppraisal = user?.id === appraisal.employeeId;
+
+  // Debug logs
+  useEffect(() => {
+    console.log('=== AppraisalDetailModal Debug ===');
+    console.log('User ID:', user?.id);
+    console.log('User Role:', user?.role);
+    console.log('Appraisal Employee ID:', appraisal.employeeId);
+    console.log('Appraisal Manager ID:', appraisal.managerId);
+    console.log('Is Employee Viewing Own:', isEmployeeViewingOwnAppraisal);
+    console.log('Has Self Review:', !!appraisal.selfReview);
+    console.log('Has Manager Review:', !!appraisal.managerReview);
+    console.log('Self Review:', appraisal.selfReview);
+    console.log('Manager Review:', appraisal.managerReview);
+    console.log('==================================');
+  }, [user?.id, appraisal.employeeId, appraisal.managerId, appraisal.selfReview, appraisal.managerReview]);
+
   useEffect(() => {
     loadUsers();
     loadTemplate();
@@ -641,10 +660,27 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
           </div>
 
           {/* Reviews */}
+          {(() => {
+            console.log('=== Rendering Reviews Section ===');
+            console.log('appraisal.selfReview exists:', !!appraisal.selfReview);
+            console.log('appraisal.managerReview exists:', !!appraisal.managerReview);
+            console.log('appraisal.hrReview exists:', !!appraisal.hrReview);
+            console.log('Should show reviews section:', !!(appraisal.selfReview || appraisal.managerReview || appraisal.hrReview));
+            console.log('user?.id:', user?.id);
+            console.log('appraisal.employeeId:', appraisal.employeeId);
+            console.log('appraisal.managerId:', appraisal.managerId);
+            return null;
+          })()}
           {(appraisal.selfReview || appraisal.managerReview || appraisal.hrReview) && (
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Reviews</h3>
               
+              {(() => {
+                console.log('=== Rendering Self Review in Detail Modal ===');
+                console.log('appraisal.selfReview exists:', !!appraisal.selfReview);
+                console.log('Will render self review:', !!appraisal.selfReview);
+                return null;
+              })()}
               {appraisal.selfReview && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg">
                   <h4 className="font-medium text-blue-900 mb-2">Self Review</h4>
@@ -652,7 +688,7 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
                 </div>
               )}
 
-              {appraisal.managerReview && (
+              {appraisal.managerReview && (user?.id === appraisal.managerId) && (
                 <div className="mb-4 p-4 bg-yellow-50 rounded-lg">
                   <h4 className="font-medium text-yellow-900 mb-2">Manager Review</h4>
                   <p className="text-sm text-yellow-800">{appraisal.managerReview.overallComments}</p>

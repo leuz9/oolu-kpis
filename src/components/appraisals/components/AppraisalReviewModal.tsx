@@ -26,6 +26,11 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
   const loadTemplate = async () => {
     try {
       setLoading(true);
+      if (!appraisal.templateId) {
+        console.error('Appraisal missing templateId:', appraisal);
+        alert('Error: This appraisal is missing a template. Please contact an administrator.');
+        return;
+      }
       const templateData = await AppraisalService.getTemplate(appraisal.templateId);
       setTemplate(templateData);
       
@@ -62,6 +67,13 @@ export function AppraisalReviewModal({ appraisal, reviewType, onClose, onSubmit 
 
   const handleSubmit = async () => {
     if (!user) return;
+
+    // Check if appraisal has templateId
+    if (!appraisal.templateId) {
+      alert('Error: This appraisal is missing a template. Please contact an administrator.');
+      console.error('Appraisal missing templateId:', appraisal);
+      return;
+    }
 
     // Check permissions based on template reviewType
     if (reviewType === 'self' && template?.reviewType && template.reviewType !== 'self' && template.reviewType !== 'both') {

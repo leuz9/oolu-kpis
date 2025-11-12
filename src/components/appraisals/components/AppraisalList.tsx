@@ -24,7 +24,7 @@ import { RecalculateRatingsButton } from './RecalculateRatingsButton';
 import { userService } from '../../../services/userService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AppraisalService } from '../../../services/appraisalService';
-import type { Appraisal, AppraisalCycle, AppraisalTemplate, User as UserType } from '../../../types';
+import type { Appraisal, AppraisalCycle, AppraisalTemplate, AppraisalResponse, User as UserType } from '../../../types';
 
 interface AppraisalListProps {
   appraisals: Appraisal[];
@@ -679,6 +679,48 @@ interface ReviewsModalProps {
 }
 
 function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
+  const { user } = useAuth();
+  const [template, setTemplate] = useState<AppraisalTemplate | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Check if current user is viewing their own appraisal (as employee)
+  // This includes managers viewing their own self-review
+  const isEmployeeViewingOwnAppraisal = user?.id === appraisal.employeeId;
+  
+  // Check if current user is the manager (but not the employee) viewing the appraisal
+  const isManagerViewingEmployeeAppraisal = user?.id === appraisal.managerId && user?.id !== appraisal.employeeId;
+
+  // Debug logs
+  useEffect(() => {
+    console.log('=== ReviewsModal Debug ===');
+    console.log('User ID:', user?.id);
+    console.log('User Role:', user?.role);
+    console.log('Appraisal Employee ID:', appraisal.employeeId);
+    console.log('Appraisal Manager ID:', appraisal.managerId);
+    console.log('Is Employee Viewing Own:', isEmployeeViewingOwnAppraisal);
+    console.log('Is Manager Viewing Employee:', isManagerViewingEmployeeAppraisal);
+    console.log('Has Self Review:', !!appraisal.selfReview);
+    console.log('Has Manager Review:', !!appraisal.managerReview);
+    console.log('Self Review:', appraisal.selfReview);
+    console.log('========================');
+  }, [user?.id, appraisal.employeeId, appraisal.managerId, appraisal.selfReview, appraisal.managerReview]);
+
+  useEffect(() => {
+    loadTemplate();
+  }, []);
+
+  const loadTemplate = async () => {
+    try {
+      setLoading(true);
+      const templateData = await AppraisalService.getTemplate(appraisal.templateId);
+      setTemplate(templateData);
+    } catch (error) {
+      console.error('Error loading template:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatReviewDate = (date: any): string => {
     if (!date) return 'N/A';
     try {
@@ -693,6 +735,230 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
     } catch (error) {
       return 'N/A';
     }
+  };
+
+  const formatAnswer = (answer: any, questionType?: string): string | React.ReactNode => {
+    if (answer === null || answer === undefined || answer === '') {
+      return <span className="text-gray-400 italic">No answer provided</span>;
+    }
+
+    if (typeof answer === 'number') {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold">
+            {answer}
+          </span>
+          <span className="text-gray-500">/ 5</span>
+        </div>
+      );
+    }
+
+    if (Array.isArray(answer)) {
+      return (
+        <ul className="list-disc list-inside space-y-1">
+          {answer.map((item, idx) => (
+            <li key={idx} className="text-gray-900">{item}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    const answerStr = String(answer);
+    
+    // Format text with line breaks and paragraphs
+    // Preserve multiple line breaks by splitting and mapping
+    const lines = answerStr.split('\n');
+    const formattedText = lines.map((line, idx) => {
+      if (line.trim() === '') {
+        return <br key={idx} />;
+      }
+      return (
+        <span key={idx}>
+          {line}
+          {idx < lines.length - 1 && <br />}
+        </span>
+      );
+    });
+
+    return <div className="text-gray-900 whitespace-pre-wrap leading-relaxed">{formattedText}</div>;
+  };
+
+  const getQuestionById = (questionId: string) => {
+    if (!template) return null;
+    for (const section of template.sections) {
+      const question = section.questions.find(q => q.id === questionId);
+      if (question) {
+        return { question, section };
+      }
+    }
+    return null;
+  };
+
+  const renderReviewContent = (review: AppraisalResponse, colorScheme: {
+    border: string;
+    bg: string;
+    bgLight: string;
+    text: string;
+    textLight: string;
+  }) => {
+    if (!template) {
+      // Fallback when template is missing: show overall comments and flat responses
+      return (
+        <div className="space-y-4">
+          {review.overallComments && (
+            <div>
+              <h5 className="text-sm font-semibold text-gray-700 mb-2">Overall Comments</h5>
+              <div className="text-sm text-gray-900 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                {formatAnswer(review.overallComments)}
+              </div>
+            </div>
+          )}
+
+          {review.responses && review.responses.length > 0 ? (
+            <div className="space-y-3">
+              {review.responses.map((response, idx) => (
+                <div key={idx} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="mb-2 flex items-start gap-2">
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">Q{idx + 1}</span>
+                    <span className="text-xs text-gray-500">(template not found)</span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-gray-600 font-medium">Answer: </span>
+                    <div className="mt-1">{formatAnswer(response.answer)}</div>
+                  </div>
+                  {response.comments && (
+                    <div className="text-sm pt-2 border-t border-gray-100 mt-2">
+                      <span className="text-gray-600 font-medium">Comments: </span>
+                      <div className="mt-1 text-gray-900 bg-gray-50 rounded p-2">
+                        {formatAnswer(response.comments)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p>No responses provided</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Group responses by section
+    const responsesBySection: { [sectionId: string]: Array<{ question: any; section: any; response: any }> } = {};
+    
+    if (review.responses) {
+      review.responses.forEach(response => {
+        const questionData = getQuestionById(response.questionId);
+        if (questionData) {
+          const sectionId = questionData.section.id;
+          if (!responsesBySection[sectionId]) {
+            responsesBySection[sectionId] = [];
+          }
+          responsesBySection[sectionId].push({
+            question: questionData.question,
+            section: questionData.section,
+            response
+          });
+        }
+      });
+    }
+
+    // Sort sections by order
+    const sortedSections = template.sections
+      .sort((a, b) => a.order - b.order)
+      .filter(section => responsesBySection[section.id]?.length > 0);
+
+    return (
+      <div className="space-y-4">
+        {/* Overall Comments */}
+        {review.overallComments && (
+          <div>
+            <h5 className="text-sm font-semibold text-gray-700 mb-2">Overall Comments</h5>
+            <div className="text-sm text-gray-900 bg-gray-50 rounded-lg p-4 border border-gray-200">
+              {formatAnswer(review.overallComments)}
+            </div>
+          </div>
+        )}
+
+        {/* Responses by Section */}
+        {sortedSections.length > 0 && (
+          <div className="space-y-6">
+            {sortedSections.map(section => {
+              const sectionResponses = responsesBySection[section.id];
+              // Sort questions by order within the section
+              const sortedResponses = sectionResponses.sort((a, b) => a.question.order - b.question.order);
+
+              return (
+                <div key={section.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className={`${colorScheme.bgLight} px-4 py-3 border-b border-gray-200`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="font-semibold text-gray-900">{section.title}</h5>
+                        {section.description && (
+                          <p className="text-xs text-gray-600 mt-1">{section.description}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+                        {section.weight}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-white divide-y divide-gray-100">
+                    {sortedResponses.map(({ question, response }, idx) => (
+                      <div key={question.id} className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="mb-3">
+                          <div className="flex items-start gap-2">
+                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                              Q{idx + 1}
+                            </span>
+                            <h6 className="text-sm font-medium text-gray-900 flex-1">
+                              {question.text}
+                              {question.required && (
+                                <span className="text-red-500 ml-1">*</span>
+                              )}
+                            </h6>
+                          </div>
+                          {question.description && (
+                            <p className="text-xs text-gray-600 mt-1 ml-6">{question.description}</p>
+                          )}
+                        </div>
+                        <div className="ml-6 space-y-2">
+                          <div className="text-sm">
+                            <span className="text-gray-600 font-medium">Answer: </span>
+                            <div className="mt-1">
+                              {formatAnswer(response.answer, question.type)}
+                            </div>
+                          </div>
+                          {response.comments && (
+                            <div className="text-sm pt-2 border-t border-gray-100">
+                              <span className="text-gray-600 font-medium">Comments: </span>
+                              <div className="mt-1 text-gray-900 bg-gray-50 rounded p-2">
+                                {formatAnswer(response.comments)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {(!review.responses || review.responses.length === 0) && (
+          <div className="text-center py-8 text-gray-500">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+            <p>No responses provided</p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -720,6 +986,14 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* Self Review */}
+          {(() => {
+            console.log('=== Rendering Self Review ===');
+            console.log('appraisal.selfReview exists:', !!appraisal.selfReview);
+            console.log('user?.id:', user?.id);
+            console.log('appraisal.employeeId:', appraisal.employeeId);
+            console.log('Should show self review:', !!appraisal.selfReview);
+            return null;
+          })()}
           {appraisal.selfReview && (
             <div className="border border-blue-200 rounded-lg overflow-hidden">
               <div className="bg-blue-50 px-6 py-4 border-b border-blue-200">
@@ -741,42 +1015,26 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                 </div>
               </div>
               <div className="p-6 bg-white">
-                <div className="space-y-4">
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 mb-2">Overall Comments</h5>
-                    <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-4">
-                      {appraisal.selfReview.overallComments || 'No comments provided'}
-                    </p>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">Loading review...</p>
                   </div>
-                  {appraisal.selfReview.responses && appraisal.selfReview.responses.length > 0 && (
-                    <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses ({appraisal.selfReview.responses.length})</h5>
-                      <div className="space-y-3">
-                        {appraisal.selfReview.responses.map((response, idx) => (
-                          <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 mb-1">Question {idx + 1}</p>
-                            <p className="text-sm text-gray-900">
-                              {typeof response.answer === 'number' ? (
-                                <span className="flex items-center gap-2">
-                                  <span className="font-medium">{response.answer}</span>
-                                  <span className="text-gray-500">/ 5</span>
-                                </span>
-                              ) : (
-                                response.answer?.toString()
-                              )}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  renderReviewContent(appraisal.selfReview, {
+                    border: 'border-blue-200',
+                    bg: 'bg-blue-100',
+                    bgLight: 'bg-blue-50',
+                    text: 'text-blue-900',
+                    textLight: 'text-blue-700'
+                  })
+                )}
               </div>
             </div>
           )}
 
-          {/* Manager Review */}
-          {appraisal.managerReview && (
+          {/* Manager Review - Hidden from employees viewing their own appraisal, but visible to managers viewing their own */}
+          {appraisal.managerReview && (isManagerViewingEmployeeAppraisal || (user?.id === appraisal.managerId && user?.id === appraisal.employeeId)) && (
             <div className="border border-yellow-200 rounded-lg overflow-hidden">
               <div className="bg-yellow-50 px-6 py-4 border-b border-yellow-200">
                 <div className="flex items-center justify-between">
@@ -797,36 +1055,20 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                 </div>
               </div>
               <div className="p-6 bg-white">
-                <div className="space-y-4">
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 mb-2">Overall Comments</h5>
-                    <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-4">
-                      {appraisal.managerReview.overallComments || 'No comments provided'}
-                    </p>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">Loading review...</p>
                   </div>
-                  {appraisal.managerReview.responses && appraisal.managerReview.responses.length > 0 && (
-                    <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses ({appraisal.managerReview.responses.length})</h5>
-                      <div className="space-y-3">
-                        {appraisal.managerReview.responses.map((response, idx) => (
-                          <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 mb-1">Question {idx + 1}</p>
-                            <p className="text-sm text-gray-900">
-                              {typeof response.answer === 'number' ? (
-                                <span className="flex items-center gap-2">
-                                  <span className="font-medium">{response.answer}</span>
-                                  <span className="text-gray-500">/ 5</span>
-                                </span>
-                              ) : (
-                                response.answer?.toString()
-                              )}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  renderReviewContent(appraisal.managerReview, {
+                    border: 'border-yellow-200',
+                    bg: 'bg-yellow-100',
+                    bgLight: 'bg-yellow-50',
+                    text: 'text-yellow-900',
+                    textLight: 'text-yellow-700'
+                  })
+                )}
               </div>
             </div>
           )}
@@ -853,36 +1095,20 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
                 </div>
               </div>
               <div className="p-6 bg-white">
-                <div className="space-y-4">
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 mb-2">Overall Comments</h5>
-                    <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-4">
-                      {appraisal.hrReview.overallComments || 'No comments provided'}
-                    </p>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">Loading review...</p>
                   </div>
-                  {appraisal.hrReview.responses && appraisal.hrReview.responses.length > 0 && (
-                    <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-3">Responses ({appraisal.hrReview.responses.length})</h5>
-                      <div className="space-y-3">
-                        {appraisal.hrReview.responses.map((response, idx) => (
-                          <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 mb-1">Question {idx + 1}</p>
-                            <p className="text-sm text-gray-900">
-                              {typeof response.answer === 'number' ? (
-                                <span className="flex items-center gap-2">
-                                  <span className="font-medium">{response.answer}</span>
-                                  <span className="text-gray-500">/ 5</span>
-                                </span>
-                              ) : (
-                                response.answer?.toString()
-                              )}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  renderReviewContent(appraisal.hrReview, {
+                    border: 'border-purple-200',
+                    bg: 'bg-purple-100',
+                    bgLight: 'bg-purple-50',
+                    text: 'text-purple-900',
+                    textLight: 'text-purple-700'
+                  })
+                )}
               </div>
             </div>
           )}
