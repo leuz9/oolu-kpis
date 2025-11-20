@@ -47,8 +47,11 @@ export const userService = {
         throw new Error('User not found');
       }
       return { id: userDoc.id, ...userDoc.data() } as User;
-    } catch (error) {
-      console.error('Error getting user:', error);
+    } catch (error: any) {
+      // Only log non-"User not found" errors to avoid console spam
+      if (error?.message !== 'User not found') {
+        console.error('Error getting user:', error);
+      }
       throw error;
     }
   },

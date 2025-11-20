@@ -8,7 +8,9 @@ import {
   query,
   where,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  getDoc,
+  arrayUnion
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { notificationService } from './notificationService';

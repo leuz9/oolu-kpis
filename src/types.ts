@@ -146,6 +146,12 @@ export interface Task {
     title: string;
     completed: boolean;
   }>;
+  comments?: Array<{
+    id: string;
+    content: string;
+    userId: string;
+    createdAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
