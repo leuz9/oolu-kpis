@@ -20,7 +20,7 @@ export default function Settings() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
+      <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
         <h1 className="text-2xl font-bold text-gray-900 mb-8">Settings</h1>
 
         <div className="space-y-6">

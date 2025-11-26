@@ -48,6 +48,8 @@ import TaskAnalytics from './components/TaskAnalytics';
 import FocusMode from './components/FocusMode';
 import QuickActions from './components/QuickActions';
 import BulkActionsBar from './components/BulkActionsBar';
+import DepartmentTabs from './components/DepartmentTabs';
+import { projectService } from '../../services/projectService';
 
 type ViewType = 'list' | 'grid' | 'kanban' | 'calendar' | 'analytics';
 type FilterPreset = 'all' | 'my-tasks' | 'urgent' | 'due-today' | 'overdue' | 'completed';
@@ -67,11 +69,14 @@ export default function Tasks() {
   const [filterPriority, setFilterPriority] = useState<'all' | Task['priority']>('all');
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [filterPreset, setFilterPreset] = useState<FilterPreset>('all');
+  const [filterDepartment, setFilterDepartment] = useState('all');
+  const [projectsByDepartment, setProjectsByDepartment] = useState<{ [key: string]: string[] }>({});
+  const [taskProjectMap, setTaskProjectMap] = useState<{ [key: string]: string }>({});
   
   // Reset selection when view or filters change
   useEffect(() => {
     setSelectedTaskIds([]);
-  }, [view, filterStatus, filterPriority, filterAssignee, filterPreset, searchTerm]);
+  }, [view, filterStatus, filterPriority, filterAssignee, filterPreset, searchTerm, filterDepartment]);
   const [showFocusMode, setShowFocusMode] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -82,6 +87,7 @@ export default function Tasks() {
   useEffect(() => {
     fetchTasks();
     loadUsers();
+    loadProjects();
     
     // Keyboard shortcuts
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -137,6 +143,36 @@ export default function Tasks() {
       setUsers(usersMap);
     } catch (err) {
       console.error('Error loading users:', err);
+    }
+  };
+
+  const loadProjects = async () => {
+    try {
+      const projects = await projectService.getProjects();
+      const projectsMap: { [key: string]: string[] } = {};
+      const taskMap: { [key: string]: string } = {};
+      
+      projects.forEach(project => {
+        if (project.department) {
+          if (!projectsMap[project.department]) {
+            projectsMap[project.department] = [];
+          }
+          projectsMap[project.department].push(project.id);
+        }
+      });
+      
+      // Map tasks to projects
+      const allTasks = await taskService.getTasks();
+      allTasks.forEach(task => {
+        if (task.projectId) {
+          taskMap[task.id] = task.projectId;
+        }
+      });
+      
+      setProjectsByDepartment(projectsMap);
+      setTaskProjectMap(taskMap);
+    } catch (error) {
+      console.error('Error loading projects:', error);
     }
   };
 
@@ -287,6 +323,21 @@ export default function Tasks() {
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     const matchesAssignee = filterAssignee === 'all' || task.assignee === filterAssignee;
     
+    // Department filter
+    let matchesDepartment = true;
+    if (filterDepartment !== 'all') {
+      const taskProjectId = taskProjectMap[task.id];
+      if (taskProjectId) {
+        const projectDepartment = Object.keys(projectsByDepartment).find(deptId => 
+          projectsByDepartment[deptId]?.includes(taskProjectId)
+        );
+        matchesDepartment = projectDepartment === filterDepartment;
+      } else {
+        // If task has no project, exclude it when filtering by department
+        matchesDepartment = false;
+      }
+    }
+    
     // Apply preset filters
     let matchesPreset = true;
     if (filterPreset === 'due-today') {
@@ -323,7 +374,7 @@ export default function Tasks() {
       }
     }
     
-    return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesPreset;
+    return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesPreset && matchesDepartment;
   });
 
   // Calculate stats
@@ -365,46 +416,45 @@ export default function Tasks() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-6`}>
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
+        <div className="w-full space-y-3 sm:space-y-4">
           {/* Header with animated gradient */}
-          <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 rounded-2xl shadow-xl p-8 text-white">
+          <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 rounded-xl shadow-lg p-4 sm:p-5 text-white">
             <div className="absolute inset-0 bg-black/10"></div>
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             <div className="relative z-10">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-3">
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 flex items-center gap-2 sm:gap-3">
-                    <Sparkles className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 animate-pulse flex-shrink-0" />
+                  <h1 className="text-xl sm:text-2xl font-bold mb-1 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 animate-pulse flex-shrink-0" />
                     <span className="truncate">Task Management</span>
                   </h1>
-                  <p className="text-primary-100 text-sm sm:text-base lg:text-lg">
-                    Stay organized, stay productive, achieve more
+                  <p className="text-primary-100 text-xs sm:text-sm">
+                    Stay organized, stay productive
               </p>
             </div>
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                     onClick={handleRefresh}
                     disabled={refreshing || loading}
-                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200 border border-white/30 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200 border border-white/30 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Refresh tasks"
                   >
-                    <RotateCcw className={`h-4 w-4 sm:h-5 sm:w-5 ${refreshing ? 'animate-spin' : ''}`} />
+                    <RotateCcw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
                     <span className="hidden sm:inline">Refresh</span>
                 </button>
                 <button
                     onClick={() => setShowFocusMode(true)}
-                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200 border border-white/30 text-sm sm:text-base"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200 border border-white/30 text-xs sm:text-sm"
                   >
-                    <Timer className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="hidden sm:inline">Focus Mode</span>
-                    <span className="sm:hidden">Focus</span>
+                    <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Focus</span>
                 </button>
                 <button
                     onClick={() => setShowTaskForm(true)}
-                    className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 bg-white text-primary-600 rounded-lg hover:bg-primary-50 font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm sm:text-base"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-white text-primary-600 rounded-lg hover:bg-primary-50 font-semibold transition-all duration-200 shadow-md hover:shadow-lg text-xs sm:text-sm"
                   >
-                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="hidden sm:inline">New Task</span>
                     <span className="sm:hidden">New</span>
                 </button>
@@ -412,26 +462,26 @@ export default function Tasks() {
               </div>
               
               {/* Quick Stats in Header */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/20">
-                  <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
-                  <div className="text-xs sm:text-sm text-primary-100">Total Tasks</div>
+              <div className="grid grid-cols-5 gap-2 mt-3">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
+                  <div className="text-lg sm:text-xl font-bold">{stats.total}</div>
+                  <div className="text-[10px] sm:text-xs text-primary-100">Total</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/20">
-                  <div className="text-xl sm:text-2xl font-bold text-green-300">{stats.completed}</div>
-                  <div className="text-xs sm:text-sm text-primary-100">Completed</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
+                  <div className="text-lg sm:text-xl font-bold text-green-300">{stats.completed}</div>
+                  <div className="text-[10px] sm:text-xs text-primary-100">Done</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/20">
-                  <div className="text-xl sm:text-2xl font-bold text-yellow-300">{stats.inProgress}</div>
-                  <div className="text-xs sm:text-sm text-primary-100">In Progress</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
+                  <div className="text-lg sm:text-xl font-bold text-yellow-300">{stats.inProgress}</div>
+                  <div className="text-[10px] sm:text-xs text-primary-100">Active</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/20">
-                  <div className="text-xl sm:text-2xl font-bold text-orange-300">{stats.dueToday}</div>
-                  <div className="text-xs sm:text-sm text-primary-100">Due Today</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
+                  <div className="text-lg sm:text-xl font-bold text-orange-300">{stats.dueToday}</div>
+                  <div className="text-[10px] sm:text-xs text-primary-100">Today</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/20">
-                  <div className="text-xl sm:text-2xl font-bold text-red-300">{stats.overdue}</div>
-                  <div className="text-xs sm:text-sm text-primary-100">Overdue</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
+                  <div className="text-lg sm:text-xl font-bold text-red-300">{stats.overdue}</div>
+                  <div className="text-[10px] sm:text-xs text-primary-100">Overdue</div>
                 </div>
               </div>
             </div>
@@ -439,98 +489,102 @@ export default function Tasks() {
 
           {/* Alerts */}
           {error && (
-            <div className="animate-slide-down bg-red-50 border-l-4 border-red-400 p-4 rounded-lg shadow-md">
+            <div className="animate-slide-down bg-red-50 border-l-4 border-red-400 p-2.5 sm:p-3 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 text-red-400 mr-3" />
-                  <p className="text-sm text-red-700">{error}</p>
+                  <AlertTriangle className="h-4 w-4 text-red-400 mr-2" />
+                  <p className="text-xs sm:text-sm text-red-700">{error}</p>
                 </div>
                 <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
           )}
 
           {success && (
-            <div className="animate-slide-down bg-green-50 border-l-4 border-green-400 p-4 rounded-lg shadow-md">
+            <div className="animate-slide-down bg-green-50 border-l-4 border-green-400 p-2.5 sm:p-3 rounded-lg shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <CheckCircle2 className="h-5 w-5 text-green-400 mr-3" />
-                  <p className="text-sm text-green-700">{success}</p>
+                  <CheckCircle2 className="h-4 w-4 text-green-400 mr-2" />
+                  <p className="text-xs sm:text-sm text-green-700">{success}</p>
                 </div>
                 <button onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600">
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
           )}
 
           {/* Enhanced Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <div className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 sm:p-6 border-l-4 border-primary-500 transform hover:scale-105">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-primary-500">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Completion Rate</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.completionRate.toFixed(0)}%</p>
+                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">Completion</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.completionRate.toFixed(0)}%</p>
                   </div>
-                <div className="p-2 sm:p-3 bg-primary-100 rounded-full group-hover:bg-primary-200 transition-colors flex-shrink-0 ml-2">
-                  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
+                <div className="p-1.5 bg-primary-100 rounded-full group-hover:bg-primary-200 transition-colors flex-shrink-0 ml-2">
+                  <Target className="h-4 w-4 text-primary-600" />
                 </div>
               </div>
-              <div className="mt-3 sm:mt-4 w-full bg-gray-200 rounded-full h-2">
+              <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
                 <div 
-                  className="bg-gradient-to-r from-primary-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-primary-500 to-purple-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${stats.completionRate}%` }}
                 ></div>
               </div>
             </div>
 
-            <div className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 sm:p-6 border-l-4 border-yellow-500 transform hover:scale-105">
+            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-yellow-500">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">In Progress</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.inProgress}</p>
+                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">In Progress</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.inProgress}</p>
                   </div>
-                <div className="p-2 sm:p-3 bg-yellow-100 rounded-full group-hover:bg-yellow-200 transition-colors flex-shrink-0 ml-2">
-                  <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
+                <div className="p-1.5 bg-yellow-100 rounded-full group-hover:bg-yellow-200 transition-colors flex-shrink-0 ml-2">
+                  <Activity className="h-4 w-4 text-yellow-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Active tasks</p>
             </div>
 
-            <div className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 sm:p-6 border-l-4 border-red-500 transform hover:scale-105">
+            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-red-500">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Urgent Tasks</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.urgent}</p>
+                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">Urgent</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.urgent}</p>
                   </div>
-                <div className="p-2 sm:p-3 bg-red-100 rounded-full group-hover:bg-red-200 transition-colors flex-shrink-0 ml-2">
-                  <Flame className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+                <div className="p-1.5 bg-red-100 rounded-full group-hover:bg-red-200 transition-colors flex-shrink-0 ml-2">
+                  <Flame className="h-4 w-4 text-red-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Requires attention</p>
             </div>
 
-            <div className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-4 sm:p-6 border-l-4 border-green-500 transform hover:scale-105">
+            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-green-500">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Completed</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.completed}</p>
+                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">Completed</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.completed}</p>
                   </div>
-                <div className="p-2 sm:p-3 bg-green-100 rounded-full group-hover:bg-green-200 transition-colors flex-shrink-0 ml-2">
-                  <Award className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                <div className="p-1.5 bg-green-100 rounded-full group-hover:bg-green-200 transition-colors flex-shrink-0 ml-2">
+                  <Award className="h-4 w-4 text-green-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Great job! 🎉</p>
             </div>
           </div>
 
+          {/* Department Tabs */}
+          <DepartmentTabs
+            tasks={tasks}
+            selectedDepartment={filterDepartment}
+            onDepartmentChange={setFilterDepartment}
+          />
+
           {/* View Selector and Filters */}
-          <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
-            <div className="flex flex-col gap-4">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
+            <div className="flex flex-col gap-2 sm:gap-3">
               {/* View Toggle and Search Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 {/* View Toggle */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="flex rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -544,15 +598,15 @@ export default function Tasks() {
                       <button
                         key={id}
                         onClick={() => setView(id as ViewType)}
-                        className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 transition-all duration-200 ${
+                        className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-sm transition-all duration-200 ${
                           view === id
                             ? 'bg-primary-600 text-white shadow-md'
                             : 'bg-white text-gray-700 hover:bg-gray-50'
                         } ${id === 'list' ? 'rounded-l-lg' : ''} ${id === 'analytics' ? 'rounded-r-lg' : ''}`}
                         title={label}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span className="hidden lg:inline">{label}</span>
+                        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <span className="hidden lg:inline text-xs">{label}</span>
                       </button>
                     ))}
                   </div>
@@ -561,7 +615,7 @@ export default function Tasks() {
                 {/* Search and Quick Filters */}
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                   <div className="relative flex-1 min-w-0">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                    <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
                   <input
                     type="text"
                       placeholder="Search tasks... (⌘K)"
@@ -573,26 +627,26 @@ export default function Tasks() {
                   
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0"
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 text-sm"
                   >
-                    <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="hidden sm:inline">Filters</span>
-                    {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {showFilters ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
 
             {/* Advanced Filters */}
             {showFilters && (
-              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 animate-slide-down">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 animate-slide-down">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
                   {/* Filter Presets */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Quick Filters</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Quick Filters</label>
                     <select
                       value={filterPreset}
                       onChange={(e) => applyFilterPreset(e.target.value as FilterPreset)}
-                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                     >
                       <option value="all">All Tasks</option>
                       <option value="my-tasks">My Tasks</option>
@@ -604,11 +658,11 @@ export default function Tasks() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               >
                 <option value="all">All Status</option>
                 <option value="todo">To Do</option>
@@ -619,11 +673,11 @@ export default function Tasks() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value as typeof filterPriority)}
-                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               >
                 <option value="all">All Priorities</option>
                 <option value="low">Low</option>
@@ -634,11 +688,11 @@ export default function Tasks() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Assignee</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Assignee</label>
               <select
                 value={filterAssignee}
                 onChange={(e) => setFilterAssignee(e.target.value)}
-                      className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               >
                 <option value="all">All Assignees</option>
                       {Array.from(new Set(tasks.map(t => t.assignee).filter(Boolean))).map(assignee => (

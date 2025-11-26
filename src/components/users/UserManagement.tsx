@@ -183,7 +183,7 @@ export default function UserManagement() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
+      <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
         <div className="w-full">
           <div className="flex justify-between items-center mb-8">
             <div>

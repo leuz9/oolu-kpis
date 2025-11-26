@@ -19,6 +19,11 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCountry, setFilterCountry] = useState('all');
+  const [filterDepartment, setFilterDepartment] = useState('all');
+  const [filterProgress, setFilterProgress] = useState('all');
+  const [filterDate, setFilterDate] = useState('all');
+  const [filterHasTasks, setFilterHasTasks] = useState('all');
   const [showActions, setShowActions] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
@@ -67,6 +72,7 @@ export default function Projects() {
         progress: projectData.progress,
         managerId: projectData.managerId,
         department: projectData.department,
+        countryIds: projectData.countryIds || [], // Ensure countryIds array exists
         documents: projectData.documents || [], // Ensure documents array exists
         teamMembers: projectData.teamMembers || [] // Ensure teamMembers array exists
       };
@@ -98,19 +104,90 @@ export default function Projects() {
   };
 
   const filteredProjects = projects.filter(project => {
+    // Search filter
     const matchesSearch = 
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Status filter
     const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    
+    // Country filter
+    const matchesCountry = filterCountry === 'all' || 
+      (project.countryIds && project.countryIds.includes(filterCountry));
+    
+    // Department filter
+    const matchesDepartment = filterDepartment === 'all' || 
+      project.department === filterDepartment;
+    
+    // Progress filter
+    let matchesProgress = true;
+    if (filterProgress !== 'all') {
+      const progress = project.progress || 0;
+      switch (filterProgress) {
+        case '0-25':
+          matchesProgress = progress >= 0 && progress <= 25;
+          break;
+        case '25-50':
+          matchesProgress = progress > 25 && progress <= 50;
+          break;
+        case '50-75':
+          matchesProgress = progress > 50 && progress <= 75;
+          break;
+        case '75-100':
+          matchesProgress = progress > 75 && progress < 100;
+          break;
+        case '100':
+          matchesProgress = progress >= 100;
+          break;
+      }
+    }
+    
+    // Date filter
+    let matchesDate = true;
+    if (filterDate !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueDate = new Date(project.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      switch (filterDate) {
+        case 'overdue':
+          matchesDate = dueDate < today && project.status !== 'completed';
+          break;
+        case 'due-today':
+          matchesDate = daysDiff === 0;
+          break;
+        case 'due-week':
+          matchesDate = daysDiff >= 0 && daysDiff <= 7;
+          break;
+        case 'due-month':
+          matchesDate = daysDiff >= 0 && daysDiff <= 30;
+          break;
+        case 'upcoming':
+          matchesDate = daysDiff > 30;
+          break;
+      }
+    }
+    
+    // Has tasks filter
+    let matchesHasTasks = true;
+    if (filterHasTasks !== 'all') {
+      const hasTasks = (project.tasks && project.tasks.length > 0);
+      matchesHasTasks = filterHasTasks === 'with-tasks' ? hasTasks : !hasTasks;
+    }
+    
+    return matchesSearch && matchesStatus && matchesCountry && matchesDepartment && 
+           matchesProgress && matchesDate && matchesHasTasks;
   });
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
-        <div className="max-w-7xl mx-auto">
+      <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
+        <div className="w-full">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
@@ -156,6 +233,16 @@ export default function Projects() {
             onSearchChange={setSearchTerm}
             filterStatus={filterStatus}
             onStatusChange={setFilterStatus}
+            filterCountry={filterCountry}
+            onCountryChange={setFilterCountry}
+            filterDepartment={filterDepartment}
+            onDepartmentChange={setFilterDepartment}
+            filterProgress={filterProgress}
+            onProgressChange={setFilterProgress}
+            filterDate={filterDate}
+            onDateChange={setFilterDate}
+            filterHasTasks={filterHasTasks}
+            onHasTasksChange={setFilterHasTasks}
           />
 
           {loading ? (

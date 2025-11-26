@@ -139,7 +139,7 @@ export default function Countries() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -158,7 +158,7 @@ export default function Countries() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="w-full p-3 sm:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">

@@ -58,8 +58,8 @@ export default function Analytics() {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
-          <div className="max-w-7xl mx-auto">
+        <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
+          <div className="w-full">
             <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
               <p className="text-sm text-red-700">{error}</p>
             </div>
@@ -112,8 +112,8 @@ export default function Analytics() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-8`}>
-        <div className="max-w-7xl mx-auto">
+      <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
+        <div className="w-full">
           <AnalyticsHeader
             selectedPeriod={selectedPeriod}
             onPeriodChange={setSelectedPeriod}

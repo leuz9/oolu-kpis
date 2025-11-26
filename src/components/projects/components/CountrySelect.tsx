@@ -87,6 +87,7 @@ export default function CountrySelect({
   });
 
   const selectedCountries = countries.filter(c => selectedCountryIds.includes(c.id));
+  const allCountriesSelected = countries.length > 0 && selectedCountryIds.length === countries.length;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) {
@@ -97,11 +98,13 @@ export default function CountrySelect({
       return;
     }
 
+    const totalItems = filteredCountries.length + 1; // +1 for "All countries" option
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
         setHighlightedIndex(prev => 
-          prev < filteredCountries.length - 1 ? prev + 1 : prev
+          prev < totalItems - 1 ? prev + 1 : prev
         );
         break;
       case 'ArrowUp':
@@ -110,8 +113,11 @@ export default function CountrySelect({
         break;
       case 'Enter':
         e.preventDefault();
-        if (filteredCountries[highlightedIndex]) {
-          toggleCountry(filteredCountries[highlightedIndex].id);
+        if (highlightedIndex === 0) {
+          // "All countries" option
+          handleSelectAll();
+        } else if (filteredCountries[highlightedIndex - 1]) {
+          toggleCountry(filteredCountries[highlightedIndex - 1].id);
         }
         break;
       case 'Escape':
@@ -128,6 +134,16 @@ export default function CountrySelect({
       ? selectedCountryIds.filter(id => id !== countryId)
       : [...selectedCountryIds, countryId];
     onChange(newSelection);
+  };
+
+  const handleSelectAll = () => {
+    if (allCountriesSelected) {
+      // Deselect all
+      onChange([]);
+    } else {
+      // Select all countries
+      onChange(countries.map(c => c.id));
+    }
   };
 
   const handleRemoveCountry = (e: React.MouseEvent, countryId: string) => {
@@ -157,7 +173,22 @@ export default function CountrySelect({
             onKeyDown={handleKeyDown}
             className="flex items-center gap-2 flex-1 min-w-0 text-left"
           >
-            {selectedCountries.length > 0 ? (
+            {allCountriesSelected ? (
+              <div className="flex items-center gap-1.5 bg-primary-50 text-primary-700 px-2.5 py-1 rounded-md text-sm font-medium">
+                <Globe className="h-4 w-4" />
+                <span>All countries</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange([]);
+                  }}
+                  className="ml-1 hover:bg-primary-100 rounded-full p-0.5 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : selectedCountries.length > 0 ? (
               <div className="flex flex-wrap gap-2 flex-1">
                 {selectedCountries.map((country) => (
                   <div
@@ -205,7 +236,7 @@ export default function CountrySelect({
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
-                    setHighlightedIndex(0);
+                    setHighlightedIndex(0); // Reset to "All countries" when searching
                   }}
                   onKeyDown={handleKeyDown}
                   placeholder="Search countries..."
@@ -225,43 +256,77 @@ export default function CountrySelect({
                 className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
               >
                 {filteredCountries.length > 0 ? (
-                  filteredCountries.map((country, index) => {
-                    const isSelected = selectedCountryIds.includes(country.id);
-                    const isHighlighted = index === highlightedIndex;
-                    
-                    return (
-                      <button
-                        key={country.id}
-                        type="button"
-                        onClick={() => toggleCountry(country.id)}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 ${
-                          isHighlighted
-                            ? 'bg-primary-50 border-l-4 border-primary-500'
-                            : 'hover:bg-gray-50 border-l-4 border-transparent'
-                        } ${isSelected ? 'bg-primary-50' : ''}`}
-                      >
-                        <span className="text-2xl flex-shrink-0">{country.flag}</span>
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className={`font-medium truncate ${
-                            isSelected ? 'text-primary-700' : 'text-gray-900'
-                          }`}>
-                            {country.name}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {country.code}
+                  <>
+                    {/* All Countries Option */}
+                    <button
+                      type="button"
+                      onClick={handleSelectAll}
+                      onMouseEnter={() => setHighlightedIndex(0)}
+                      className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 border-b border-gray-100 ${
+                        highlightedIndex === 0
+                          ? 'bg-primary-50 border-l-4 border-primary-500'
+                          : 'hover:bg-gray-50 border-l-4 border-transparent'
+                      } ${allCountriesSelected ? 'bg-primary-50' : ''}`}
+                    >
+                      <Globe className="text-2xl flex-shrink-0 text-primary-600" />
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className={`font-medium truncate ${
+                          allCountriesSelected ? 'text-primary-700' : 'text-gray-900'
+                        }`}>
+                          All countries
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          Select all {countries.length} countries
+                        </div>
+                      </div>
+                      {allCountriesSelected && (
+                        <div className="flex-shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
+                            <Check className="h-4 w-4 text-white" />
                           </div>
                         </div>
-                        {isSelected && (
-                          <div className="flex-shrink-0">
-                            <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
-                              <Check className="h-4 w-4 text-white" />
+                      )}
+                    </button>
+
+                    {/* Individual Countries */}
+                    {filteredCountries.map((country, index) => {
+                      const isSelected = selectedCountryIds.includes(country.id);
+                      const isHighlighted = index + 1 === highlightedIndex;
+                      
+                      return (
+                        <button
+                          key={country.id}
+                          type="button"
+                          onClick={() => toggleCountry(country.id)}
+                          onMouseEnter={() => setHighlightedIndex(index + 1)}
+                          className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 ${
+                            isHighlighted
+                              ? 'bg-primary-50 border-l-4 border-primary-500'
+                              : 'hover:bg-gray-50 border-l-4 border-transparent'
+                          } ${isSelected ? 'bg-primary-50' : ''}`}
+                        >
+                          <span className="text-2xl flex-shrink-0">{country.flag}</span>
+                          <div className="flex-1 min-w-0 text-left">
+                            <div className={`font-medium truncate ${
+                              isSelected ? 'text-primary-700' : 'text-gray-900'
+                            }`}>
+                              {country.name}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {country.code}
                             </div>
                           </div>
-                        )}
-                      </button>
-                    );
-                  })
+                          {isSelected && (
+                            <div className="flex-shrink-0">
+                              <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
+                                <Check className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </>
                 ) : (
                   <div className="px-4 py-8 text-center">
                     <Globe className="h-12 w-12 text-gray-300 mx-auto mb-2" />
@@ -277,9 +342,11 @@ export default function CountrySelect({
               <div className="px-4 py-2 border-t border-gray-200 bg-gray-50 text-xs text-gray-500">
                 <div className="flex items-center justify-between">
                   <span>
-                    {selectedCountryIds.length > 0 
-                      ? `${selectedCountryIds.length} selected` 
-                      : 'No countries selected'}
+                    {allCountriesSelected 
+                      ? `All ${countries.length} countries selected` 
+                      : selectedCountryIds.length > 0 
+                        ? `${selectedCountryIds.length} selected` 
+                        : 'No countries selected'}
                   </span>
                   <span className="flex items-center gap-1">
                     <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs">↑↓</kbd>

@@ -103,8 +103,8 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out`}>
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             {/* Cover Image */}
             <div className="relative h-48 bg-gradient-to-r from-primary-600 to-primary-800">

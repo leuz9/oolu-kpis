@@ -47,3 +47,24 @@
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Responsive sidebar adjustments */
+@media (max-width: 768px) {
+  /* On mobile, sidebar should be overlay */
+  .sidebar-fixed {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar-fixed.open {
+    transform: translateX(0);
+  }
+}
