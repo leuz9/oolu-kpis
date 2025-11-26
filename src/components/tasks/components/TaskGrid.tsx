@@ -49,6 +49,8 @@ export default function TaskGrid({
         return <Clock className="h-5 w-5 text-yellow-500" />;
       case 'review':
         return <AlertTriangle className="h-5 w-5 text-orange-500" />;
+      case 'blocked':
+        return <AlertTriangle className="h-5 w-5 text-red-500" />;
       default:
         return <Clock className="h-5 w-5 text-gray-400" />;
     }

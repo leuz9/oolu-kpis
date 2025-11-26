@@ -68,6 +68,7 @@ export default function BulkActionsBar({
     { value: 'todo', label: 'To Do', icon: Clock, color: 'text-gray-600' },
     { value: 'in-progress', label: 'In Progress', icon: Clock, color: 'text-blue-600' },
     { value: 'review', label: 'Review', icon: AlertTriangle, color: 'text-orange-600' },
+    { value: 'blocked', label: 'Blocked', icon: AlertTriangle, color: 'text-red-600' },
     { value: 'done', label: 'Done', icon: CheckCircle2, color: 'text-green-600' }
   ];
 

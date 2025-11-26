@@ -18,23 +18,24 @@ interface TaskAnalyticsProps {
 
 export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnalyticsProps) {
   const analytics = useMemo(() => {
-    // Priority distribution
+    // Priority distribution (based on filtered tasks)
     const priorityDistribution = {
-      urgent: tasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length,
-      high: tasks.filter(t => t.priority === 'high' && t.status !== 'done').length,
-      medium: tasks.filter(t => t.priority === 'medium' && t.status !== 'done').length,
-      low: tasks.filter(t => t.priority === 'low' && t.status !== 'done').length,
+      urgent: filteredTasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length,
+      high: filteredTasks.filter(t => t.priority === 'high' && t.status !== 'done').length,
+      medium: filteredTasks.filter(t => t.priority === 'medium' && t.status !== 'done').length,
+      low: filteredTasks.filter(t => t.priority === 'low' && t.status !== 'done').length,
     };
 
-    // Status distribution
+    // Status distribution (based on filtered tasks)
     const statusDistribution = {
-      todo: tasks.filter(t => t.status === 'todo').length,
-      'in-progress': tasks.filter(t => t.status === 'in-progress').length,
-      review: tasks.filter(t => t.status === 'review').length,
-      done: tasks.filter(t => t.status === 'done').length,
+      todo: filteredTasks.filter(t => t.status === 'todo').length,
+      'in-progress': filteredTasks.filter(t => t.status === 'in-progress').length,
+      review: filteredTasks.filter(t => t.status === 'review').length,
+      blocked: filteredTasks.filter(t => t.status === 'blocked').length,
+      done: filteredTasks.filter(t => t.status === 'done').length,
     };
 
-    // Completion trend (last 7 days)
+    // Completion trend (last 7 days) - based on filtered tasks
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
@@ -44,15 +45,15 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
 
     const completionTrend = last7Days.map(date => {
       const dateStr = date.toISOString().split('T')[0];
-      return tasks.filter(t => {
+      return filteredTasks.filter(t => {
         if (t.status !== 'done') return false;
         const completedDate = new Date(t.updatedAt).toISOString().split('T')[0];
         return completedDate === dateStr;
       }).length;
     });
 
-    // Average completion time
-    const completedTasks = tasks.filter(t => t.status === 'done');
+    // Average completion time (based on filtered tasks)
+    const completedTasks = filteredTasks.filter(t => t.status === 'done');
     const avgCompletionTime = completedTasks.length > 0
       ? completedTasks.reduce((sum, task) => {
           const created = new Date(task.createdAt).getTime();
@@ -69,7 +70,7 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
       completionTrend,
       avgDays,
     };
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const maxTrend = Math.max(...analytics.completionTrend, 1);
 
@@ -132,11 +133,12 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
           </h3>
           <div className="space-y-4">
             {Object.entries(analytics.statusDistribution).map(([status, count]) => {
-              const percentage = tasks.length > 0 ? (count / tasks.length) * 100 : 0;
+              const percentage = filteredTasks.length > 0 ? (count / filteredTasks.length) * 100 : 0;
               const colors = {
                 todo: 'bg-gray-500',
                 'in-progress': 'bg-blue-500',
                 review: 'bg-yellow-500',
+                blocked: 'bg-red-500',
                 done: 'bg-green-500',
               };
               

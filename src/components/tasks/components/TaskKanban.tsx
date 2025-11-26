@@ -39,6 +39,8 @@ export default function TaskKanban({
 }: TaskKanbanProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
+  const [draggedTask, setDraggedTask] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const getUserName = (userId: string) => {
     return users[userId]?.displayName || userId;
   };
@@ -46,6 +48,7 @@ export default function TaskKanban({
     { id: 'todo', title: 'To Do', color: 'bg-gray-500' },
     { id: 'in-progress', title: 'In Progress', color: 'bg-yellow-500' },
     { id: 'review', title: 'Review', color: 'bg-orange-500' },
+    { id: 'blocked', title: 'Blocked', color: 'bg-red-500' },
     { id: 'done', title: 'Done', color: 'bg-green-500' }
   ];
 
@@ -112,12 +115,44 @@ export default function TaskKanban({
             </span>
           </div>
 
-          <div className="space-y-3 sm:space-y-4 flex-1 overflow-y-auto min-h-0">
+          <div 
+            className={`space-y-3 sm:space-y-4 flex-1 overflow-y-auto min-h-0 transition-all ${
+              dragOverColumn === column.id ? 'bg-primary-50 rounded-lg' : ''
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOverColumn(column.id);
+            }}
+            onDragLeave={() => {
+              setDragOverColumn(null);
+            }}
+            onDrop={async (e) => {
+              e.preventDefault();
+              const taskId = e.dataTransfer.getData('taskId');
+              if (taskId && column.id) {
+                await onUpdateTask(taskId, { status: column.id as Task['status'] });
+              }
+              setDragOverColumn(null);
+              setDraggedTask(null);
+            }}
+          >
             {getTasksByStatus(column.id).map((task) => (
               <div
                 key={task.id}
-                className={`bg-white rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-all duration-200 flex flex-col ${
+                draggable
+                onDragStart={(e) => {
+                  setDraggedTask(task.id);
+                  e.dataTransfer.setData('taskId', task.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragEnd={() => {
+                  setDraggedTask(null);
+                  setDragOverColumn(null);
+                }}
+                className={`bg-white rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-all duration-200 flex flex-col cursor-move ${
                   selectedTaskIds.includes(task.id) ? 'ring-2 ring-primary-500' : ''
+                } ${
+                  draggedTask === task.id ? 'opacity-50' : ''
                 }`}
               >
                 <div className="flex items-center justify-between mb-2 gap-2">

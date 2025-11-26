@@ -36,9 +36,11 @@ import {
   Command,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  User,
+  RotateCcw as ResetIcon
 } from 'lucide-react';
-import type { Task, User as UserType } from '../../types';
+import type { Task, User as UserType, Project } from '../../types';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import TaskGrid from './components/TaskGrid';
@@ -50,6 +52,7 @@ import QuickActions from './components/QuickActions';
 import BulkActionsBar from './components/BulkActionsBar';
 import DepartmentTabs from './components/DepartmentTabs';
 import { projectService } from '../../services/projectService';
+import { countryService } from '../../services/countryService';
 
 type ViewType = 'list' | 'grid' | 'kanban' | 'calendar' | 'analytics';
 type FilterPreset = 'all' | 'my-tasks' | 'urgent' | 'due-today' | 'overdue' | 'completed';
@@ -70,13 +73,19 @@ export default function Tasks() {
   const [filterAssignee, setFilterAssignee] = useState('all');
   const [filterPreset, setFilterPreset] = useState<FilterPreset>('all');
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [filterProject, setFilterProject] = useState('all');
+  const [filterCountry, setFilterCountry] = useState('all');
+  const [filterMe, setFilterMe] = useState(false);
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [projectsByDepartment, setProjectsByDepartment] = useState<{ [key: string]: string[] }>({});
   const [taskProjectMap, setTaskProjectMap] = useState<{ [key: string]: string }>({});
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [countries, setCountries] = useState<any[]>([]);
   
   // Reset selection when view or filters change
   useEffect(() => {
     setSelectedTaskIds([]);
-  }, [view, filterStatus, filterPriority, filterAssignee, filterPreset, searchTerm, filterDepartment]);
+  }, [view, filterStatus, filterPriority, filterAssignee, filterPreset, searchTerm, filterDepartment, filterProject, filterCountry, filterMe, filterOverdue]);
   const [showFocusMode, setShowFocusMode] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -88,6 +97,7 @@ export default function Tasks() {
     fetchTasks();
     loadUsers();
     loadProjects();
+    loadCountries();
     
     // Keyboard shortcuts
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -148,11 +158,11 @@ export default function Tasks() {
 
   const loadProjects = async () => {
     try {
-      const projects = await projectService.getProjects();
+      const allProjects = await projectService.getProjects();
       const projectsMap: { [key: string]: string[] } = {};
       const taskMap: { [key: string]: string } = {};
       
-      projects.forEach(project => {
+      allProjects.forEach(project => {
         if (project.department) {
           if (!projectsMap[project.department]) {
             projectsMap[project.department] = [];
@@ -169,10 +179,20 @@ export default function Tasks() {
         }
       });
       
+      setProjects(allProjects);
       setProjectsByDepartment(projectsMap);
       setTaskProjectMap(taskMap);
     } catch (error) {
       console.error('Error loading projects:', error);
+    }
+  };
+
+  const loadCountries = async () => {
+    try {
+      const allCountries = await countryService.getActiveCountries();
+      setCountries(allCountries);
+    } catch (error) {
+      console.error('Error loading countries:', error);
     }
   };
 
@@ -323,6 +343,54 @@ export default function Tasks() {
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     const matchesAssignee = filterAssignee === 'all' || task.assignee === filterAssignee;
     
+    // Me filter - show only tasks assigned to current user
+    const matchesMe = !filterMe || task.assignee === user?.id;
+    
+    // Overdue filter - show only overdue tasks
+    let matchesOverdue = true;
+    if (filterOverdue) {
+      if (!task.dueDate) {
+        matchesOverdue = false;
+      } else {
+        try {
+          const dueDate = new Date(task.dueDate);
+          if (isNaN(dueDate.getTime())) {
+            matchesOverdue = false;
+          } else {
+            dueDate.setHours(0, 0, 0, 0);
+            matchesOverdue = dueDate.getTime() < today.getTime() && task.status !== 'done';
+          }
+        } catch {
+          matchesOverdue = false;
+        }
+      }
+    }
+    
+    // Project filter
+    let matchesProject = true;
+    if (filterProject === 'no-project') {
+      matchesProject = !task.projectId;
+    } else if (filterProject !== 'all') {
+      matchesProject = task.projectId === filterProject;
+    }
+    
+    // Country filter
+    let matchesCountry = true;
+    if (filterCountry !== 'all') {
+      const taskProjectId = taskProjectMap[task.id];
+      if (taskProjectId) {
+        const project = projects.find(p => p.id === taskProjectId);
+        if (project && project.countryIds) {
+          matchesCountry = project.countryIds.includes(filterCountry);
+        } else {
+          matchesCountry = false;
+        }
+      } else {
+        // If task has no project, exclude it when filtering by country
+        matchesCountry = false;
+      }
+    }
+    
     // Department filter
     let matchesDepartment = true;
     if (filterDepartment !== 'all') {
@@ -374,15 +442,15 @@ export default function Tasks() {
       }
     }
     
-    return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesPreset && matchesDepartment;
+    return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesMe && matchesOverdue && matchesProject && matchesCountry && matchesDepartment && matchesPreset;
   });
 
-  // Calculate stats
+  // Calculate stats based on filtered tasks
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === 'done').length,
-    inProgress: tasks.filter(t => t.status === 'in-progress').length,
-    dueToday: tasks.filter(t => {
+    total: filteredTasks.length,
+    completed: filteredTasks.filter(t => t.status === 'done').length,
+    inProgress: filteredTasks.filter(t => t.status === 'in-progress').length,
+    dueToday: filteredTasks.filter(t => {
       if (!t.dueDate) return false;
       try {
         const dueDate = new Date(t.dueDate);
@@ -393,7 +461,7 @@ export default function Tasks() {
         return false;
       }
     }).length,
-    overdue: tasks.filter(t => {
+    overdue: filteredTasks.filter(t => {
       if (!t.dueDate) return false;
       try {
         const dueDate = new Date(t.dueDate);
@@ -404,8 +472,8 @@ export default function Tasks() {
         return false;
       }
     }).length,
-    urgent: tasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length,
-    completionRate: tasks.length > 0 ? (tasks.filter(t => t.status === 'done').length / tasks.length) * 100 : 0
+    urgent: filteredTasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length,
+    completionRate: filteredTasks.length > 0 ? (filteredTasks.filter(t => t.status === 'done').length / filteredTasks.length) * 100 : 0
   };
 
   const getUserName = (userId: string) => {
@@ -626,6 +694,52 @@ export default function Tasks() {
                   </div>
                   
                   <button
+                    onClick={() => setFilterMe(!filterMe)}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border rounded-lg transition-colors flex-shrink-0 text-sm ${
+                      filterMe
+                        ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700'
+                        : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                    title="Show only my tasks"
+                  >
+                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Me</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setFilterOverdue(!filterOverdue)}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border rounded-lg transition-colors flex-shrink-0 text-sm ${
+                      filterOverdue
+                        ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
+                        : 'border-gray-300 hover:bg-gray-50'
+                    }`}
+                    title="Show only overdue tasks"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Overdue</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilterStatus('all');
+                      setFilterPriority('all');
+                      setFilterAssignee('all');
+                      setFilterPreset('all');
+                      setFilterDepartment('all');
+                      setFilterProject('all');
+                      setFilterCountry('all');
+                      setFilterMe(false);
+                      setFilterOverdue(false);
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 text-sm"
+                    title="Reset all filters"
+                  >
+                    <ResetIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Reset</span>
+                  </button>
+                  
+                  <button
                     onClick={() => setShowFilters(!showFilters)}
                     className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 text-sm"
                   >
@@ -639,7 +753,7 @@ export default function Tasks() {
             {/* Advanced Filters */}
             {showFilters && (
               <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 animate-slide-down">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
                   {/* Filter Presets */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Quick Filters</label>
@@ -668,6 +782,7 @@ export default function Tasks() {
                 <option value="todo">To Do</option>
                 <option value="in-progress">In Progress</option>
                 <option value="review">Review</option>
+                <option value="blocked">Blocked</option>
                 <option value="done">Done</option>
               </select>
                   </div>
@@ -684,6 +799,39 @@ export default function Tasks() {
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
                 <option value="urgent">Urgent</option>
+              </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Project</label>
+              <select
+                value={filterProject}
+                onChange={(e) => setFilterProject(e.target.value)}
+                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="all">All Projects</option>
+                <option value="no-project">No Project</option>
+                      {projects.map(project => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                ))}
+              </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+              <select
+                value={filterCountry}
+                onChange={(e) => setFilterCountry(e.target.value)}
+                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="all">All Countries</option>
+                      {countries.map(country => (
+                        <option key={country.id} value={country.id}>
+                          {country.flag} {country.name}
+                        </option>
+                ))}
               </select>
                   </div>
 

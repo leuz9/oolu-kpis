@@ -178,6 +178,7 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
       case 'done': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case 'in-progress': return <Clock className="h-4 w-4 text-blue-500" />;
       case 'review': return <AlertCircle className="h-4 w-4 text-orange-500" />;
+      case 'blocked': return <AlertTriangle className="h-4 w-4 text-red-500" />;
       default: return <Target className="h-4 w-4 text-gray-500" />;
     }
   };
@@ -267,6 +268,7 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
                   <option value="todo">To Do</option>
                   <option value="in-progress">In Progress</option>
                   <option value="review">Review</option>
+                  <option value="blocked">Blocked</option>
                   <option value="done">Done</option>
                 </select>
               </div>

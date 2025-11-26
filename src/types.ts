@@ -136,7 +136,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
+  status: 'todo' | 'in-progress' | 'review' | 'done' | 'blocked';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   assignee: string;
   projectId?: string;
