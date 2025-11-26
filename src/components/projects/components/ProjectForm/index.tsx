@@ -32,7 +32,8 @@ export default function ProjectForm({ onSubmit, onClose, initialData }: ProjectF
     teamMembers: initialData?.teamMembers || [],
     objectives: initialData?.objectives || [],
     tasks: initialData?.tasks || [],
-    updates: initialData?.updates || []
+    updates: initialData?.updates || [],
+    countryIds: initialData?.countryIds || []
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,6 +108,7 @@ export default function ProjectForm({ onSubmit, onClose, initialData }: ProjectF
             startDate={formData.startDate}
             dueDate={formData.dueDate}
             department={formData.department}
+            countryIds={formData.countryIds}
             onChange={handleFieldChange}
             onDepartmentChange={handleDepartmentChange}
           />

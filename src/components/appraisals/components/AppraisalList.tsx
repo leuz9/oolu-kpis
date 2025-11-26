@@ -1033,8 +1033,8 @@ function ReviewsModal({ appraisal, onClose }: ReviewsModalProps) {
             </div>
           )}
 
-          {/* Manager Review - Hidden from employees viewing their own appraisal, but visible to managers viewing their own */}
-          {appraisal.managerReview && (isManagerViewingEmployeeAppraisal || (user?.id === appraisal.managerId && user?.id === appraisal.employeeId)) && (
+          {/* Manager Review - Hidden from employees viewing their own appraisal, but visible to managers viewing their own and superadmin */}
+          {appraisal.managerReview && (isManagerViewingEmployeeAppraisal || (user?.id === appraisal.managerId && user?.id === appraisal.employeeId) || user?.role === 'superadmin') && (
             <div className="border border-yellow-200 rounded-lg overflow-hidden">
               <div className="bg-yellow-50 px-6 py-4 border-b border-yellow-200">
                 <div className="flex items-center justify-between">

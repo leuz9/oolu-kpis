@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { departmentService } from '../../../../services/departmentService';
 import type { Project, Department } from '../../../../types';
+import CountrySelect from '../CountrySelect';
 
 interface BasicInformationProps {
   name: string;
@@ -10,6 +11,7 @@ interface BasicInformationProps {
   startDate: string;
   dueDate: string;
   department: string;
+  countryIds?: string[];
   onChange: (field: string, value: any) => void;
   onDepartmentChange: (departmentId: string) => void;
 }
@@ -22,6 +24,7 @@ export default function BasicInformation({
   startDate,
   dueDate,
   department,
+  countryIds = [],
   onChange,
   onDepartmentChange
 }: BasicInformationProps) {
@@ -137,6 +140,15 @@ export default function BasicInformation({
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
           />
         </div>
+      </div>
+
+      <div>
+        <CountrySelect
+          selectedCountryIds={countryIds}
+          onChange={(countryIds) => onChange('countryIds', countryIds)}
+          label="Countries"
+          placeholder="Select one or more countries..."
+        />
       </div>
     </div>
   );

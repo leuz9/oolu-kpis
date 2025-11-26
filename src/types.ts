@@ -108,6 +108,7 @@ export interface Project {
   dueDate: string;
   budget?: number;
   department: string;
+  countryIds?: string[];
   teamMembers: string[];
   objectives: string[];
   tasks: Task[];

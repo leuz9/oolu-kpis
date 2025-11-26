@@ -688,7 +688,7 @@ export function AppraisalDetailModal({ appraisal, onClose, onRefresh }: Appraisa
                 </div>
               )}
 
-              {appraisal.managerReview && (user?.id === appraisal.managerId) && (
+              {appraisal.managerReview && (user?.id === appraisal.managerId || user?.role === 'superadmin') && (
                 <div className="mb-4 p-4 bg-yellow-50 rounded-lg">
                   <h4 className="font-medium text-yellow-900 mb-2">Manager Review</h4>
                   <p className="text-sm text-yellow-800">{appraisal.managerReview.overallComments}</p>
