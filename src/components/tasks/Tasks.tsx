@@ -53,6 +53,7 @@ import BulkActionsBar from './components/BulkActionsBar';
 import DepartmentTabs from './components/DepartmentTabs';
 import { projectService } from '../../services/projectService';
 import { countryService } from '../../services/countryService';
+import { departmentService } from '../../services/departmentService';
 
 type ViewType = 'list' | 'grid' | 'kanban' | 'calendar' | 'analytics';
 type FilterPreset = 'all' | 'my-tasks' | 'urgent' | 'due-today' | 'overdue' | 'completed';
@@ -81,6 +82,7 @@ export default function Tasks() {
   const [taskProjectMap, setTaskProjectMap] = useState<{ [key: string]: string }>({});
   const [projects, setProjects] = useState<Project[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   
   // Reset selection when view or filters change
   useEffect(() => {
@@ -98,6 +100,7 @@ export default function Tasks() {
     loadUsers();
     loadProjects();
     loadCountries();
+    loadDepartments();
     
     // Keyboard shortcuts
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -193,6 +196,15 @@ export default function Tasks() {
       setCountries(allCountries);
     } catch (error) {
       console.error('Error loading countries:', error);
+    }
+  };
+
+  const loadDepartments = async () => {
+    try {
+      const allDepartments = await departmentService.getDepartments();
+      setDepartments(allDepartments);
+    } catch (error) {
+      console.error('Error loading departments:', error);
     }
   };
 
@@ -391,18 +403,27 @@ export default function Tasks() {
       }
     }
     
-    // Department filter
+    // Department filter - based on assignee's department
     let matchesDepartment = true;
     if (filterDepartment !== 'all') {
-      const taskProjectId = taskProjectMap[task.id];
-      if (taskProjectId) {
-        const projectDepartment = Object.keys(projectsByDepartment).find(deptId => 
-          projectsByDepartment[deptId]?.includes(taskProjectId)
-        );
-        matchesDepartment = projectDepartment === filterDepartment;
-      } else {
-        // If task has no project, exclude it when filtering by department
+      if (!task.assignee) {
+        // If task has no assignee, exclude it when filtering by department
         matchesDepartment = false;
+      } else {
+        const assigneeUser = users[task.assignee];
+        if (!assigneeUser || !assigneeUser.department) {
+          // If assignee doesn't exist or has no department, exclude it
+          matchesDepartment = false;
+        } else {
+          // Find the department by ID to get its name
+          const selectedDept = departments.find(d => d.id === filterDepartment);
+          if (selectedDept) {
+            // Compare the assignee's department name with the selected department name
+            matchesDepartment = assigneeUser.department === selectedDept.name;
+          } else {
+            matchesDepartment = false;
+          }
+        }
       }
     }
     
