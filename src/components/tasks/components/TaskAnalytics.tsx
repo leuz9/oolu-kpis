@@ -75,60 +75,60 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
   const maxTrend = Math.max(...analytics.completionTrend, 1);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 sm:p-5 md:p-6 text-white">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <p className="text-blue-100 text-sm mb-1">Completion Rate</p>
-              <p className="text-4xl font-bold">{stats.completionRate.toFixed(1)}%</p>
+              <p className="text-blue-100 text-xs sm:text-sm mb-0.5 sm:mb-1">Completion Rate</p>
+              <p className="text-2xl sm:text-3xl md:text-4xl font-bold">{stats.completionRate.toFixed(1)}%</p>
             </div>
-            <div className="p-3 bg-white/20 rounded-full">
-              <Target className="h-8 w-8" />
+            <div className="p-2 sm:p-2.5 md:p-3 bg-white/20 rounded-full">
+              <Target className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8" />
             </div>
           </div>
-          <div className="w-full bg-white/20 rounded-full h-2">
+          <div className="w-full bg-white/20 rounded-full h-1.5 sm:h-2">
             <div
-              className="bg-white rounded-full h-2 transition-all duration-500"
+              className="bg-white rounded-full h-1.5 sm:h-2 transition-all duration-500"
               style={{ width: `${stats.completionRate}%` }}
             />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 sm:p-5 md:p-6 text-white">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <p className="text-green-100 text-sm mb-1">Completed Tasks</p>
-              <p className="text-4xl font-bold">{stats.completed}</p>
+              <p className="text-green-100 text-xs sm:text-sm mb-0.5 sm:mb-1">Completed Tasks</p>
+              <p className="text-2xl sm:text-3xl md:text-4xl font-bold">{stats.completed}</p>
             </div>
-            <div className="p-3 bg-white/20 rounded-full">
-              <Award className="h-8 w-8" />
+            <div className="p-2 sm:p-2.5 md:p-3 bg-white/20 rounded-full">
+              <Award className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8" />
             </div>
           </div>
-          <p className="text-green-100 text-sm">Out of {stats.total} total tasks</p>
+          <p className="text-green-100 text-xs sm:text-sm">Out of {stats.total} total tasks</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 sm:p-5 md:p-6 text-white sm:col-span-2 md:col-span-1">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <p className="text-purple-100 text-sm mb-1">Avg. Completion</p>
-              <p className="text-4xl font-bold">{analytics.avgDays}</p>
-              <p className="text-purple-100 text-sm mt-1">days</p>
+              <p className="text-purple-100 text-xs sm:text-sm mb-0.5 sm:mb-1">Avg. Completion</p>
+              <p className="text-2xl sm:text-3xl md:text-4xl font-bold">{analytics.avgDays}</p>
+              <p className="text-purple-100 text-xs sm:text-sm mt-0.5 sm:mt-1">days</p>
             </div>
-            <div className="p-3 bg-white/20 rounded-full">
-              <Calendar className="h-8 w-8" />
+            <div className="p-2 sm:p-2.5 md:p-3 bg-white/20 rounded-full">
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
         {/* Status Distribution */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <PieChart className="h-5 w-5 text-primary-600" />
+        <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 md:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+            <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
             Status Distribution
           </h3>
           <div className="space-y-4">
@@ -161,9 +161,9 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
         </div>
 
         {/* Priority Distribution */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Flame className="h-5 w-5 text-red-600" />
+        <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 md:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+            <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
             Priority Distribution
           </h3>
           <div className="space-y-4">
@@ -196,12 +196,12 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
         </div>
 
         {/* Completion Trend */}
-        <div className="bg-white rounded-xl shadow-md p-6 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary-600" />
+        <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 md:p-6 lg:col-span-2">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
             Completion Trend (Last 7 Days)
           </h3>
-          <div className="flex items-end justify-between h-64 gap-2">
+          <div className="flex items-end justify-between h-48 sm:h-56 md:h-64 gap-1 sm:gap-2">
             {analytics.completionTrend.map((count, index) => {
               const date = new Date();
               date.setDate(date.getDate() - (6 - index));
@@ -216,11 +216,11 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
                       title={`${count} tasks completed`}
                     />
                   </div>
-                  <div className="mt-2 text-xs text-gray-600 text-center">
+                  <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-gray-600 text-center">
                     <div>{date.toLocaleDateString('en-US', { month: 'short' })}</div>
                     <div className="font-semibold">{date.getDate()}</div>
                   </div>
-                  <div className="mt-1 text-xs font-semibold text-primary-600">{count}</div>
+                  <div className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-semibold text-primary-600">{count}</div>
                 </div>
               );
             })}
@@ -229,22 +229,22 @@ export default function TaskAnalytics({ tasks, filteredTasks, stats }: TaskAnaly
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
-          <div className="text-2xl font-bold text-gray-900">{stats.urgent}</div>
-          <div className="text-sm text-gray-600">Urgent Tasks</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+        <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-red-500">
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.urgent}</div>
+          <div className="text-xs sm:text-sm text-gray-600">Urgent Tasks</div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-500">
-          <div className="text-2xl font-bold text-gray-900">{stats.inProgress}</div>
-          <div className="text-sm text-gray-600">In Progress</div>
+        <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-yellow-500">
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.inProgress}</div>
+          <div className="text-xs sm:text-sm text-gray-600">In Progress</div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-orange-500">
-          <div className="text-2xl font-bold text-gray-900">{stats.dueToday}</div>
-          <div className="text-sm text-gray-600">Due Today</div>
+        <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-orange-500">
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.dueToday}</div>
+          <div className="text-xs sm:text-sm text-gray-600">Due Today</div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-600">
-          <div className="text-2xl font-bold text-gray-900">{stats.overdue}</div>
-          <div className="text-sm text-gray-600">Overdue</div>
+        <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-red-600">
+          <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.overdue}</div>
+          <div className="text-xs sm:text-sm text-gray-600">Overdue</div>
         </div>
       </div>
     </div>

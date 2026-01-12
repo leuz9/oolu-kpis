@@ -184,48 +184,48 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-down">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col animate-slide-down m-2 sm:m-0">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 p-4 sm:p-6 text-white">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm flex-shrink-0">
-                {isEditMode ? <Zap className="h-5 w-5 sm:h-6 sm:w-6" /> : <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />}
+        <div className="bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 p-3 sm:p-4 md:p-6 text-white">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0 flex-1">
+              <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg backdrop-blur-sm flex-shrink-0">
+                {isEditMode ? <Zap className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" /> : <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />}
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-xl sm:text-2xl font-bold truncate">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold truncate">
                   {isEditMode ? 'Edit Task' : 'Create New Task'}
                 </h2>
-                <p className="text-primary-100 text-xs sm:text-sm mt-1 hidden sm:block">
+                <p className="text-primary-100 text-[10px] sm:text-xs md:text-sm mt-0.5 sm:mt-1 hidden sm:block">
                   {isEditMode ? 'Update task details' : 'Add a new task to your list'}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
+              className="p-1.5 sm:p-2 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
             >
-              <X className="h-5 w-5 sm:h-6 sm:w-6" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-lg animate-slide-down">
+            <div className="mb-3 sm:mb-4 bg-red-50 border-l-4 border-red-400 p-3 sm:p-4 rounded-lg animate-slide-down">
               <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-400 mr-3" />
-                <p className="text-sm text-red-700">{error}</p>
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-400 mr-2 sm:mr-3" />
+                <p className="text-xs sm:text-sm text-red-700">{error}</p>
               </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
             {/* Title */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                 Task Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -233,7 +233,7 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
                 required
                 value={formData.title}
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all text-lg font-medium"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all text-base sm:text-lg font-medium"
                 placeholder="Enter task title..."
                 autoFocus
               />
@@ -241,20 +241,20 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                 Description
               </label>
               <textarea
                 rows={4}
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all resize-none"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border-2 border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all resize-none text-sm sm:text-base"
                 placeholder="Add a detailed description..."
               />
             </div>
 
             {/* Status and Priority */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   {getStatusIcon(formData.status)}
@@ -292,7 +292,7 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
             </div>
 
             {/* Assignee and Due Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {loading ? (
                 <div>
                   <div className="block text-sm font-semibold text-gray-700 mb-2">Assignee</div>
@@ -485,15 +485,15 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-4 sm:p-6 bg-gray-50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="border-t border-gray-200 p-3 sm:p-4 md:p-6 bg-gray-50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 md:gap-4">
           <div>
             {isEditMode && onDelete && (
               <button
                 type="button"
                 onClick={handleDelete}
-                className="w-full sm:w-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+                className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-1.5 sm:gap-2 font-medium"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Delete Task
               </button>
             )}
@@ -511,11 +511,11 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
             type="danger"
             loading={deleting}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-6 py-2.5 text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-medium"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-medium"
             >
               Cancel
             </button>
@@ -523,17 +523,19 @@ export default function TaskForm({ onSubmit, onClose, initialData, onUpdate, onD
               type="submit"
               onClick={handleSubmit}
               disabled={saving || !formData.title.trim()}
-              className="flex-1 sm:flex-none px-6 py-2.5 text-white bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg hover:from-primary-700 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base text-white bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg hover:from-primary-700 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-1.5 sm:gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {saving ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  Saving...
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                  <span className="hidden sm:inline">Saving...</span>
+                  <span className="sm:hidden">Save</span>
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
-                  {isEditMode ? 'Save Changes' : 'Create Task'}
+                  <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{isEditMode ? 'Save Changes' : 'Create Task'}</span>
+                  <span className="sm:hidden">{isEditMode ? 'Save' : 'Create'}</span>
                 </>
               )}
             </button>

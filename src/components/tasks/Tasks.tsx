@@ -502,15 +502,15 @@ export default function Tasks() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex overflow-x-hidden">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
-        <div className="w-full space-y-3 sm:space-y-4">
+      <div className={`flex-1 w-full min-w-0 ${sidebarOpen ? 'ml-0 md:ml-64' : 'ml-0 md:ml-20'} transition-all duration-300 ease-in-out p-2 sm:p-3 md:p-4 lg:p-6`}>
+        <div className="w-full max-w-full space-y-3 sm:space-y-4">
           {/* Header with animated gradient */}
           <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 rounded-xl shadow-lg p-4 sm:p-5 text-white">
             <div className="absolute inset-0 bg-black/10"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute top-0 right-0 w-32 sm:w-48 md:w-64 h-32 sm:h-48 md:h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-3">
                 <div className="min-w-0 flex-1">
@@ -551,26 +551,26 @@ export default function Tasks() {
               </div>
               
               {/* Quick Stats in Header */}
-              <div className="grid grid-cols-5 gap-2 mt-3">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="text-lg sm:text-xl font-bold">{stats.total}</div>
-                  <div className="text-[10px] sm:text-xs text-primary-100">Total</div>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-2 mt-3">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20">
+                  <div className="text-base sm:text-lg md:text-xl font-bold">{stats.total}</div>
+                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Total</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="text-lg sm:text-xl font-bold text-green-300">{stats.completed}</div>
-                  <div className="text-[10px] sm:text-xs text-primary-100">Done</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20">
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-green-300">{stats.completed}</div>
+                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Done</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="text-lg sm:text-xl font-bold text-yellow-300">{stats.inProgress}</div>
-                  <div className="text-[10px] sm:text-xs text-primary-100">Active</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20">
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-yellow-300">{stats.inProgress}</div>
+                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Active</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="text-lg sm:text-xl font-bold text-orange-300">{stats.dueToday}</div>
-                  <div className="text-[10px] sm:text-xs text-primary-100">Today</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20 hidden sm:block">
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-orange-300">{stats.dueToday}</div>
+                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Today</div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                  <div className="text-lg sm:text-xl font-bold text-red-300">{stats.overdue}</div>
-                  <div className="text-[10px] sm:text-xs text-primary-100">Overdue</div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20 hidden sm:block">
+                  <div className="text-base sm:text-lg md:text-xl font-bold text-red-300">{stats.overdue}</div>
+                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Overdue</div>
                 </div>
               </div>
             </div>
@@ -606,7 +606,7 @@ export default function Tasks() {
           )}
 
           {/* Enhanced Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-primary-500">
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
@@ -670,10 +670,10 @@ export default function Tasks() {
           />
 
           {/* View Selector and Filters */}
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 overflow-x-hidden">
             <div className="flex flex-col gap-2 sm:gap-3">
               {/* View Toggle and Search Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0">
                 {/* View Toggle */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="flex rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -687,7 +687,7 @@ export default function Tasks() {
                       <button
                         key={id}
                         onClick={() => setView(id as ViewType)}
-                        className={`flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 text-sm transition-all duration-200 ${
+                        className={`flex items-center justify-center gap-1 px-1.5 sm:px-2 md:px-3 py-1.5 text-xs sm:text-sm transition-all duration-200 ${
                           view === id
                             ? 'bg-primary-600 text-white shadow-md'
                             : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -695,22 +695,22 @@ export default function Tasks() {
                         title={label}
                       >
                         <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        <span className="hidden lg:inline text-xs">{label}</span>
+                        <span className="hidden xl:inline text-xs">{label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Search and Quick Filters */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className="relative flex-1 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-x-auto">
+                  <div className="relative flex-1 min-w-0 max-w-full">
                     <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
                   <input
                     type="text"
                       placeholder="Search tasks... (⌘K)"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full max-w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                   
@@ -774,7 +774,7 @@ export default function Tasks() {
             {/* Advanced Filters */}
             {showFilters && (
               <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 animate-slide-down">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
                   {/* Filter Presets */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Quick Filters</label>

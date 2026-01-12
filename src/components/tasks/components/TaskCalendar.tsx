@@ -91,44 +91,44 @@ export default function TaskCalendar({ tasks, onUpdateTask, onDeleteTask, users 
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden w-full max-w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-4 md:p-6 w-full max-w-full">
         {/* Calendar */}
         <div className="lg:col-span-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{monthName}</h2>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4 md:mb-6">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{monthName}</h2>
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => navigateMonth('prev')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <button
                 onClick={() => setCurrentDate(new Date())}
-                className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               >
                 Today
               </button>
               <button
                 onClick={() => navigateMonth('next')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 md:gap-2 mb-1.5 sm:mb-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-xs sm:text-sm font-semibold text-gray-600 py-2">
+              <div key={day} className="text-center text-[10px] sm:text-xs md:text-sm font-semibold text-gray-600 py-1 sm:py-2">
                 <span className="hidden sm:inline">{day}</span>
                 <span className="sm:hidden">{day.charAt(0)}</span>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 md:gap-2">
             {days.map((date, index) => {
               const isToday = date && 
                 date.getDate() === today.getDate() &&
@@ -151,7 +151,7 @@ export default function TaskCalendar({ tasks, onUpdateTask, onDeleteTask, users 
                 <button
                   key={index}
                   onClick={() => setSelectedDate(date)}
-                  className={`aspect-square p-2 rounded-lg border-2 transition-all hover:shadow-md ${
+                  className={`aspect-square p-1 sm:p-1.5 md:p-2 rounded-lg border-2 transition-all hover:shadow-md ${
                     isSelected
                       ? 'border-primary-500 bg-primary-50'
                       : isToday
@@ -159,19 +159,19 @@ export default function TaskCalendar({ tasks, onUpdateTask, onDeleteTask, users 
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+                  <div className={`text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
                     {date.getDate()}
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {dayTasks.slice(0, 3).map(task => (
+                  <div className="flex flex-wrap gap-0.5 sm:gap-1">
+                    {dayTasks.slice(0, 2).map(task => (
                       <div
                         key={task.id}
-                        className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}
+                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${getPriorityColor(task.priority)}`}
                         title={task.title}
                       />
                     ))}
-                    {dayTasks.length > 3 && (
-                      <div className="text-xs text-gray-500">+{dayTasks.length - 3}</div>
+                    {dayTasks.length > 2 && (
+                      <div className="text-[9px] sm:text-xs text-gray-500">+{dayTasks.length - 2}</div>
                     )}
                   </div>
                 </button>
@@ -182,10 +182,10 @@ export default function TaskCalendar({ tasks, onUpdateTask, onDeleteTask, users 
 
         {/* Task List for Selected Date */}
         <div className="lg:col-span-1">
-          <div className="sticky top-4 sm:top-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600 flex-shrink-0" />
-              <span className="break-words">
+          <div className="sticky top-3 sm:top-4 md:top-6">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4 flex items-center gap-1.5 sm:gap-2">
+              <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-primary-600 flex-shrink-0" />
+              <span className="break-words text-xs sm:text-sm md:text-base">
                 {selectedDate
                   ? selectedDate.toLocaleDateString('en-US', { 
                       weekday: 'long', 
@@ -196,13 +196,13 @@ export default function TaskCalendar({ tasks, onUpdateTask, onDeleteTask, users 
               </span>
             </h3>
 
-            <div className="space-y-3 max-h-[400px] sm:max-h-[600px] overflow-y-auto">
+            <div className="space-y-2 sm:space-y-3 max-h-[300px] sm:max-h-[400px] md:max-h-[600px] overflow-y-auto">
               {selectedDate ? (
                 selectedTasks.length > 0 ? (
                   selectedTasks.map(task => (
                     <div
                       key={task.id}
-                      className={`p-3 sm:p-4 rounded-lg border-2 ${getStatusColor(task.status)} hover:shadow-md transition-all cursor-pointer`}
+                      className={`p-2.5 sm:p-3 md:p-4 rounded-lg border-2 ${getStatusColor(task.status)} hover:shadow-md transition-all cursor-pointer`}
                       onClick={() => {
                         // Toggle task completion
                         if (task.status !== 'done') {
@@ -212,20 +212,20 @@ export default function TaskCalendar({ tasks, onUpdateTask, onDeleteTask, users 
                         }
                       }}
                     >
-                      <div className="flex items-start justify-between mb-2 gap-2">
-                        <h4 className="font-semibold text-gray-900 text-xs sm:text-sm break-words flex-1">{task.title}</h4>
-                        <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${getPriorityColor(task.priority)}`} />
+                      <div className="flex items-start justify-between mb-1.5 sm:mb-2 gap-1.5 sm:gap-2">
+                        <h4 className="font-semibold text-gray-900 text-[11px] sm:text-xs md:text-sm break-words flex-1">{task.title}</h4>
+                        <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full flex-shrink-0 ${getPriorityColor(task.priority)}`} />
                       </div>
                       
                       {task.description && (
-                        <p className="text-xs text-gray-600 mb-2 line-clamp-2 break-words">
+                        <p className="text-[10px] sm:text-xs text-gray-600 mb-1.5 sm:mb-2 line-clamp-2 break-words">
                           {renderTextWithLinks(task.description)}
                         </p>
                       )}
 
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-xs text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 md:gap-3 text-[10px] sm:text-xs text-gray-500">
                         <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                           {(() => {
                             try {
                               if (!task.dueDate) return 'No date';
@@ -242,16 +242,16 @@ export default function TaskCalendar({ tasks, onUpdateTask, onDeleteTask, users 
                         </div>
                         {task.assignee && users[task.assignee] && (
                           <div className="flex items-center gap-1 min-w-0">
-                            <Users className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate max-w-[120px] sm:max-w-none" title={users[task.assignee].displayName}>
+                            <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                            <span className="truncate max-w-[100px] sm:max-w-[120px] md:max-w-none" title={users[task.assignee].displayName}>
                               {users[task.assignee].displayName}
                             </span>
                           </div>
                         )}
                       </div>
 
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2">
+                        <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs font-medium ${
                           task.status === 'done' 
                             ? 'bg-green-200 text-green-800' 
                             : task.status === 'in-progress'

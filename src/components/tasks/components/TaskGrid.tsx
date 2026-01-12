@@ -99,7 +99,7 @@ export default function TaskGrid({
           )}
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 w-full max-w-full">
         {tasks.map((task) => (
           <div
             key={task.id}
@@ -107,25 +107,25 @@ export default function TaskGrid({
               selectedTaskIds.includes(task.id) ? 'ring-2 ring-primary-500' : ''
             }`}
           >
-            <div className="p-4 sm:p-6 flex flex-col flex-1">
-              <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="p-3 sm:p-4 md:p-6 flex flex-col flex-1">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4 gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                   {onToggleTaskSelection && (
                     <button
                       onClick={() => onToggleTaskSelection(task.id)}
-                      className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                      className={`flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center transition-all ${
                         selectedTaskIds.includes(task.id)
                           ? 'bg-primary-600 border-primary-600 text-white'
                           : 'border-gray-300 hover:border-primary-500'
                       }`}
                     >
-                      {selectedTaskIds.includes(task.id) && <CheckSquare className="h-3.5 w-3.5" />}
+                      {selectedTaskIds.includes(task.id) && <CheckSquare className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />}
                     </button>
                   )}
                   <div className="flex-shrink-0">
                     {getStatusIcon(task.status)}
                   </div>
-                <span className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium truncate ${getPriorityColor(task.priority)}`}>
+                <span className={`inline-flex items-center px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium truncate ${getPriorityColor(task.priority)}`}>
                   {task.priority}
                 </span>
               </div>
@@ -139,9 +139,9 @@ export default function TaskGrid({
               </div>
             </div>
 
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2 line-clamp-2 break-words">{task.title}</h3>
+            <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 mb-1.5 sm:mb-2 line-clamp-2 break-words">{task.title}</h3>
             {task.description && (
-              <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4 line-clamp-3 break-words flex-1">
+              <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mb-2 sm:mb-3 md:mb-4 line-clamp-2 sm:line-clamp-3 break-words flex-1">
                 {renderTextWithLinks(task.description)}
               </p>
             )}
@@ -198,31 +198,31 @@ export default function TaskGrid({
               })()}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end gap-2">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 flex justify-end gap-1.5 sm:gap-2">
               <button
                 onClick={() => setViewingTask(task)}
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95"
+                className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95"
                 title="View task"
               >
-                <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
               </button>
               <button
                 onClick={() => onUpdateTask(task.id, { status: task.status === 'done' ? 'todo' : 'done' })}
-                className={`p-2 rounded-lg transition-all duration-200 ${
+                className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
                   task.status === 'done'
                     ? 'text-green-600 bg-green-50 hover:bg-green-100'
                     : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
                 } transform hover:scale-110 active:scale-95`}
                 title={task.status === 'done' ? 'Mark as To Do' : 'Mark as Done'}
               >
-                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
               </button>
               <button
                 onClick={() => setEditingTask(task)}
-                className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95"
+                className="p-1.5 sm:p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95"
                 title="Edit task"
               >
-                <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
               </button>
             </div>
           </div>
