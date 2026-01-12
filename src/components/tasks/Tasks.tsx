@@ -373,22 +373,33 @@ export default function Tasks() {
     // Department filter - based on assignee's department
     let matchesDepartment = true;
     if (filterDepartment !== 'all') {
-      if (!task.assignee) {
-        // If task has no assignee, exclude it when filtering by department
-        matchesDepartment = false;
+      if (filterDepartment === 'no-department') {
+        // Filter for tasks without department (no assignee or assignee without department)
+        if (!task.assignee) {
+          matchesDepartment = true;
+        } else {
+          const assigneeUser = users[task.assignee];
+          matchesDepartment = !assigneeUser || !assigneeUser.department;
+        }
       } else {
-        const assigneeUser = users[task.assignee];
-        if (!assigneeUser || !assigneeUser.department) {
-          // If assignee doesn't exist or has no department, exclude it
+        // Filter for specific department
+        if (!task.assignee) {
+          // If task has no assignee, exclude it when filtering by department
           matchesDepartment = false;
         } else {
-          // Find the department by ID to get its name
-          const selectedDept = departments.find(d => d.id === filterDepartment);
-          if (selectedDept) {
-            // Compare the assignee's department name with the selected department name
-            matchesDepartment = assigneeUser.department === selectedDept.name;
-          } else {
+          const assigneeUser = users[task.assignee];
+          if (!assigneeUser || !assigneeUser.department) {
+            // If assignee doesn't exist or has no department, exclude it
             matchesDepartment = false;
+          } else {
+            // Find the department by ID to get its name
+            const selectedDept = departments.find(d => d.id === filterDepartment);
+            if (selectedDept) {
+              // Compare the assignee's department name with the selected department name
+              matchesDepartment = assigneeUser.department === selectedDept.name;
+            } else {
+              matchesDepartment = false;
+            }
           }
         }
       }
@@ -500,6 +511,8 @@ export default function Tasks() {
             tasks={tasks}
             selectedDepartment={filterDepartment}
             onDepartmentChange={setFilterDepartment}
+            users={users}
+            departments={departments}
           />
 
           {/* View Selector and Filters */}

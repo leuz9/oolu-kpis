@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Sparkles, TrendingUp, Users, CheckSquare, Zap } from 'lucide-react';
+import { Building2, Sparkles, TrendingUp, Users, CheckSquare, Zap, X } from 'lucide-react';
 import { departmentService } from '../../../services/departmentService';
-import { projectService } from '../../../services/projectService';
-import { taskService } from '../../../services/taskService';
-import type { Task } from '../../../types';
+import type { Task, User as UserType } from '../../../types';
 
 interface Department {
   id: string;
@@ -14,95 +12,69 @@ interface DepartmentTabsProps {
   tasks: Task[];
   selectedDepartment: string;
   onDepartmentChange: (departmentId: string) => void;
+  users: { [key: string]: UserType };
+  departments: Department[];
 }
 
-export default function DepartmentTabs({ tasks, selectedDepartment, onDepartmentChange }: DepartmentTabsProps) {
-  const [departments, setDepartments] = useState<Department[]>([]);
+export default function DepartmentTabs({ tasks, selectedDepartment, onDepartmentChange, users, departments }: DepartmentTabsProps) {
   const [departmentStats, setDepartmentStats] = useState<{ [key: string]: { total: number; completed: number; inProgress: number } }>({});
-  const [loading, setLoading] = useState(true);
-  const [projectsByDepartment, setProjectsByDepartment] = useState<{ [key: string]: string[] }>({});
-
-  useEffect(() => {
-    loadDepartments();
-  }, []);
 
   useEffect(() => {
     if (departments.length > 0) {
       loadDepartmentStats();
     }
-  }, [departments, tasks]);
+  }, [departments, tasks, users]);
 
-  const loadDepartments = async () => {
-    try {
-      setLoading(true);
-      const depts = await departmentService.getDepartments();
-      setDepartments(depts as Department[]);
+  const loadDepartmentStats = () => {
+    const stats: { [key: string]: { total: number; completed: number; inProgress: number } } = {};
+    
+    // Calculate stats per department based on assignee's department (matching the filter logic)
+    departments.forEach(dept => {
+      const deptTasks = tasks.filter(task => {
+        if (!task.assignee) return false;
+        const assigneeUser = users[task.assignee];
+        if (!assigneeUser || !assigneeUser.department) return false;
+        return assigneeUser.department === dept.name;
+      });
       
-      // Load projects to map departments
-      const projects = await projectService.getProjects();
-      const projectsMap: { [key: string]: string[] } = {};
-      projects.forEach(project => {
-        if (project.department) {
-          if (!projectsMap[project.department]) {
-            projectsMap[project.department] = [];
-          }
-          projectsMap[project.department].push(project.id);
-        }
-      });
-      setProjectsByDepartment(projectsMap);
-    } catch (error) {
-      console.error('Error loading departments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDepartmentStats = async () => {
-    try {
-      const stats: { [key: string]: { total: number; completed: number; inProgress: number } } = {};
-      
-      // Get all projects to map tasks to departments
-      const allProjects = await projectService.getProjects();
-      const projectToDepartment: { [key: string]: string } = {};
-      allProjects.forEach(project => {
-        if (project.department) {
-          projectToDepartment[project.id] = project.department;
-        }
-      });
-
-      // Calculate stats per department
-      departments.forEach(dept => {
-        const deptTasks = tasks.filter(task => {
-          if (!task.projectId) return false;
-          return projectToDepartment[task.projectId] === dept.id;
-        });
-        
-        stats[dept.id] = {
-          total: deptTasks.length,
-          completed: deptTasks.filter(t => t.status === 'done').length,
-          inProgress: deptTasks.filter(t => t.status === 'in-progress').length
-        };
-      });
-
-      // Stats for "All" tab
-      stats['all'] = {
-        total: tasks.length,
-        completed: tasks.filter(t => t.status === 'done').length,
-        inProgress: tasks.filter(t => t.status === 'in-progress').length
+      stats[dept.id] = {
+        total: deptTasks.length,
+        completed: deptTasks.filter(t => t.status === 'done').length,
+        inProgress: deptTasks.filter(t => t.status === 'in-progress').length
       };
+    });
 
-      setDepartmentStats(stats);
-    } catch (error) {
-      console.error('Error loading department stats:', error);
-    }
+    // Stats for "No Department" - tasks without assignee or assignee without department
+    const noDeptTasks = tasks.filter(task => {
+      if (!task.assignee) return true;
+      const assigneeUser = users[task.assignee];
+      return !assigneeUser || !assigneeUser.department;
+    });
+    
+    stats['no-department'] = {
+      total: noDeptTasks.length,
+      completed: noDeptTasks.filter(t => t.status === 'done').length,
+      inProgress: noDeptTasks.filter(t => t.status === 'in-progress').length
+    };
+
+    // Stats for "All" tab
+    stats['all'] = {
+      total: tasks.length,
+      completed: tasks.filter(t => t.status === 'done').length,
+      inProgress: tasks.filter(t => t.status === 'in-progress').length
+    };
+
+    setDepartmentStats(stats);
   };
 
   const getDepartmentIcon = (deptId: string) => {
+    if (deptId === 'no-department') return X;
     const icons = [Building2, Sparkles, TrendingUp, Users, CheckSquare, Zap];
     return icons[deptId.charCodeAt(0) % icons.length];
   };
 
   const getDepartmentColor = (deptId: string) => {
+    if (deptId === 'no-department') return 'from-gray-500 to-gray-600';
     const colors = [
       'from-blue-500 to-cyan-500',
       'from-purple-500 to-pink-500',
@@ -115,16 +87,6 @@ export default function DepartmentTabs({ tasks, selectedDepartment, onDepartment
     ];
     return colors[deptId.charCodeAt(0) % colors.length];
   };
-
-  if (loading) {
-    return (
-      <div className="mb-2 sm:mb-3 md:mb-4 bg-white rounded-lg shadow-sm p-2 sm:p-3">
-        <div className="flex items-center justify-center py-3 sm:py-4">
-          <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-primary-600"></div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="mb-2 sm:mb-3 md:mb-4 bg-white rounded-lg shadow-sm overflow-hidden">
@@ -161,6 +123,46 @@ export default function DepartmentTabs({ tasks, selectedDepartment, onDepartment
             )}
           </button>
 
+          {/* No Department Tab */}
+          {(() => {
+            const stats = departmentStats['no-department'] || { total: 0, completed: 0, inProgress: 0 };
+            const isSelected = selectedDepartment === 'no-department';
+            const Icon = X;
+            const colorClass = 'from-gray-500 to-gray-600';
+            
+            return (
+              <button
+                onClick={() => onDepartmentChange('no-department')}
+                className={`group relative flex flex-col items-center gap-0.5 sm:gap-1 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg transition-all duration-300 min-w-[70px] sm:min-w-[90px] md:min-w-[110px] ${
+                  isSelected
+                    ? `bg-gradient-to-br ${colorClass} text-white shadow-md scale-105`
+                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700 hover:scale-[1.02]'
+                }`}
+              >
+                <div className={`flex items-center gap-1 sm:gap-1.5 ${isSelected ? 'text-white' : 'text-gray-600'}`}>
+                  <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="font-semibold text-[10px] sm:text-xs md:text-sm truncate max-w-[60px] sm:max-w-[80px] md:max-w-[100px]">None</span>
+                </div>
+                <div className={`flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] md:text-xs ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>
+                  <span className="font-medium">{stats.total}</span>
+                  {stats.completed > 0 && (
+                    <span className={`px-0.5 sm:px-1 py-0.5 rounded text-[8px] sm:text-[9px] font-medium ${
+                      isSelected ? 'bg-white/20' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {stats.completed}✓
+                    </span>
+                  )}
+                </div>
+                {isSelected && (
+                  <div className={`absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-6 sm:w-8 h-0.5 bg-white rounded-full`}></div>
+                )}
+                {!isSelected && stats.total > 0 && (
+                  <div className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 w-1 h-1 sm:w-1.5 sm:h-1.5 bg-primary-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                )}
+              </button>
+            );
+          })()}
+
           {/* Department Tabs */}
           {departments.map((dept) => {
             const Icon = getDepartmentIcon(dept.id);
@@ -182,18 +184,16 @@ export default function DepartmentTabs({ tasks, selectedDepartment, onDepartment
                   <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="font-semibold text-[10px] sm:text-xs md:text-sm truncate max-w-[60px] sm:max-w-[80px] md:max-w-[100px]">{dept.name}</span>
                 </div>
-                {stats.total > 0 && (
-                  <div className={`flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] md:text-xs ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>
-                    <span className="font-medium">{stats.total}</span>
-                    {stats.completed > 0 && (
-                      <span className={`px-0.5 sm:px-1 py-0.5 rounded text-[8px] sm:text-[9px] font-medium ${
-                        isSelected ? 'bg-white/20' : 'bg-green-100 text-green-700'
-                      }`}>
-                        {stats.completed}✓
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className={`flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] md:text-xs ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>
+                  <span className="font-medium">{stats.total}</span>
+                  {stats.completed > 0 && (
+                    <span className={`px-0.5 sm:px-1 py-0.5 rounded text-[8px] sm:text-[9px] font-medium ${
+                      isSelected ? 'bg-white/20' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {stats.completed}✓
+                    </span>
+                  )}
+                </div>
                 {isSelected && (
                   <div className={`absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-6 sm:w-8 h-0.5 bg-white rounded-full`}></div>
                 )}
