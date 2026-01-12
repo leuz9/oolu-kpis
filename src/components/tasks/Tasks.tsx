@@ -3,43 +3,7 @@ import Sidebar from '../Sidebar';
 import { taskService } from '../../services/taskService';
 import { useAuth } from '../../contexts/AuthContext';
 import { userService } from '../../services/userService';
-import { 
-  CheckSquare, 
-  Plus, 
-  Search, 
-  Filter,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Calendar as CalendarIcon,
-  Users,
-  Tag,
-  LayoutGrid,
-  List,
-  Columns,
-  Calendar,
-  TrendingUp,
-  Zap,
-  Target,
-  BarChart3,
-  Timer,
-  Play,
-  Pause,
-  RotateCcw,
-  Bell,
-  Sparkles,
-  Flame,
-  Award,
-  Activity,
-  Eye,
-  EyeOff,
-  Command,
-  X,
-  ChevronDown,
-  ChevronUp,
-  User,
-  RotateCcw as ResetIcon
-} from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import type { Task, User as UserType, Project } from '../../types';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
@@ -51,12 +15,15 @@ import FocusMode from './components/FocusMode';
 import QuickActions from './components/QuickActions';
 import BulkActionsBar from './components/BulkActionsBar';
 import DepartmentTabs from './components/DepartmentTabs';
+import TaskHeader from './components/TaskHeader';
+import TaskStats from './components/TaskStats';
+import TaskAlerts from './components/TaskAlerts';
+import TaskEmptyState from './components/TaskEmptyState';
+import TaskFilters, { type ViewType, type FilterPreset } from './components/TaskFilters';
+import FloatingActionButton from './components/FloatingActionButton';
 import { projectService } from '../../services/projectService';
 import { countryService } from '../../services/countryService';
 import { departmentService } from '../../services/departmentService';
-
-type ViewType = 'list' | 'grid' | 'kanban' | 'calendar' | 'analytics';
-type FilterPreset = 'all' | 'my-tasks' | 'urgent' | 'due-today' | 'overdue' | 'completed';
 
 export default function Tasks() {
   const { user } = useAuth();
@@ -507,160 +474,26 @@ export default function Tasks() {
       
       <div className={`flex-1 w-full min-w-0 ${sidebarOpen ? 'ml-0 md:ml-64' : 'ml-0 md:ml-20'} transition-all duration-300 ease-in-out p-2 sm:p-3 md:p-4 lg:p-6`}>
         <div className="w-full max-w-full space-y-3 sm:space-y-4">
-          {/* Header with animated gradient */}
-          <div className="relative overflow-hidden bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 rounded-xl shadow-lg p-4 sm:p-5 text-white">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="absolute top-0 right-0 w-32 sm:w-48 md:w-64 h-32 sm:h-48 md:h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div className="relative z-10">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-3">
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-xl sm:text-2xl font-bold mb-1 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 animate-pulse flex-shrink-0" />
-                    <span className="truncate">Task Management</span>
-                  </h1>
-                  <p className="text-primary-100 text-xs sm:text-sm">
-                    Stay organized, stay productive
-              </p>
-            </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                    onClick={handleRefresh}
-                    disabled={refreshing || loading}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200 border border-white/30 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Refresh tasks"
-                  >
-                    <RotateCcw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline">Refresh</span>
-                </button>
-                <button
-                    onClick={() => setShowFocusMode(true)}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200 border border-white/30 text-xs sm:text-sm"
-                  >
-                    <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Focus</span>
-                </button>
-                <button
-                    onClick={() => setShowTaskForm(true)}
-                    className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-white text-primary-600 rounded-lg hover:bg-primary-50 font-semibold transition-all duration-200 shadow-md hover:shadow-lg text-xs sm:text-sm"
-                  >
-                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">New Task</span>
-                    <span className="sm:hidden">New</span>
-                </button>
-                </div>
-              </div>
-              
-              {/* Quick Stats in Header */}
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-2 mt-3">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20">
-                  <div className="text-base sm:text-lg md:text-xl font-bold">{stats.total}</div>
-                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Total</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20">
-                  <div className="text-base sm:text-lg md:text-xl font-bold text-green-300">{stats.completed}</div>
-                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Done</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20">
-                  <div className="text-base sm:text-lg md:text-xl font-bold text-yellow-300">{stats.inProgress}</div>
-                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Active</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20 hidden sm:block">
-                  <div className="text-base sm:text-lg md:text-xl font-bold text-orange-300">{stats.dueToday}</div>
-                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Today</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20 hidden sm:block">
-                  <div className="text-base sm:text-lg md:text-xl font-bold text-red-300">{stats.overdue}</div>
-                  <div className="text-[9px] sm:text-[10px] md:text-xs text-primary-100">Overdue</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Header */}
+          <TaskHeader
+            stats={stats}
+            refreshing={refreshing}
+            loading={loading}
+            onRefresh={handleRefresh}
+            onFocusMode={() => setShowFocusMode(true)}
+            onCreateTask={() => setShowTaskForm(true)}
+          />
 
           {/* Alerts */}
-          {error && (
-            <div className="animate-slide-down bg-red-50 border-l-4 border-red-400 p-2.5 sm:p-3 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <AlertTriangle className="h-4 w-4 text-red-400 mr-2" />
-                  <p className="text-xs sm:text-sm text-red-700">{error}</p>
-                </div>
-                <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {success && (
-            <div className="animate-slide-down bg-green-50 border-l-4 border-green-400 p-2.5 sm:p-3 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <CheckCircle2 className="h-4 w-4 text-green-400 mr-2" />
-                  <p className="text-xs sm:text-sm text-green-700">{success}</p>
-                </div>
-                <button onClick={() => setSuccess(null)} className="text-green-400 hover:text-green-600">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          <TaskAlerts
+            error={error}
+            success={success}
+            onDismissError={() => setError(null)}
+            onDismissSuccess={() => setSuccess(null)}
+          />
 
           {/* Enhanced Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-primary-500">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">Completion</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.completionRate.toFixed(0)}%</p>
-                  </div>
-                <div className="p-1.5 bg-primary-100 rounded-full group-hover:bg-primary-200 transition-colors flex-shrink-0 ml-2">
-                  <Target className="h-4 w-4 text-primary-600" />
-                </div>
-              </div>
-              <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
-                <div 
-                  className="bg-gradient-to-r from-primary-500 to-purple-500 h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.completionRate}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-yellow-500">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">In Progress</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.inProgress}</p>
-                  </div>
-                <div className="p-1.5 bg-yellow-100 rounded-full group-hover:bg-yellow-200 transition-colors flex-shrink-0 ml-2">
-                  <Activity className="h-4 w-4 text-yellow-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-red-500">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">Urgent</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.urgent}</p>
-                  </div>
-                <div className="p-1.5 bg-red-100 rounded-full group-hover:bg-red-200 transition-colors flex-shrink-0 ml-2">
-                  <Flame className="h-4 w-4 text-red-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-3 border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 mb-0.5">Completed</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.completed}</p>
-                  </div>
-                <div className="p-1.5 bg-green-100 rounded-full group-hover:bg-green-200 transition-colors flex-shrink-0 ml-2">
-                  <Award className="h-4 w-4 text-green-600" />
-                </div>
-              </div>
-            </div>
-          </div>
+          <TaskStats stats={stats} />
 
           {/* Department Tabs */}
           <DepartmentTabs
@@ -670,212 +503,46 @@ export default function Tasks() {
           />
 
           {/* View Selector and Filters */}
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 overflow-x-hidden">
-            <div className="flex flex-col gap-2 sm:gap-3">
-              {/* View Toggle and Search Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0">
-                {/* View Toggle */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="flex rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    {[
-                      { id: 'list', icon: List, label: 'List' },
-                      { id: 'grid', icon: LayoutGrid, label: 'Grid' },
-                      { id: 'kanban', icon: Columns, label: 'Kanban' },
-                      { id: 'calendar', icon: CalendarIcon, label: 'Calendar' },
-                      { id: 'analytics', icon: BarChart3, label: 'Analytics' }
-                    ].map(({ id, icon: Icon, label }) => (
-                      <button
-                        key={id}
-                        onClick={() => setView(id as ViewType)}
-                        className={`flex items-center justify-center gap-1 px-1.5 sm:px-2 md:px-3 py-1.5 text-xs sm:text-sm transition-all duration-200 ${
-                          view === id
-                            ? 'bg-primary-600 text-white shadow-md'
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                        } ${id === 'list' ? 'rounded-l-lg' : ''} ${id === 'analytics' ? 'rounded-r-lg' : ''}`}
-                        title={label}
-                      >
-                        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        <span className="hidden xl:inline text-xs">{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Search and Quick Filters */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-x-auto">
-                  <div className="relative flex-1 min-w-0 max-w-full">
-                    <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
-                  <input
-                    type="text"
-                      placeholder="Search tasks... (⌘K)"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full max-w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <button
-                    onClick={() => setFilterMe(!filterMe)}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border rounded-lg transition-colors flex-shrink-0 text-sm ${
-                      filterMe
-                        ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700'
-                        : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                    title="Show only my tasks"
-                  >
-                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Me</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setFilterOverdue(!filterOverdue)}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border rounded-lg transition-colors flex-shrink-0 text-sm ${
-                      filterOverdue
-                        ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
-                        : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                    title="Show only overdue tasks"
-                  >
-                    <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Overdue</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setSearchTerm('');
-                      setFilterStatus('all');
-                      setFilterPriority('all');
-                      setFilterAssignee('all');
-                      setFilterPreset('all');
-                      setFilterDepartment('all');
-                      setFilterProject('all');
-                      setFilterCountry('all');
-                      setFilterMe(false);
-                      setFilterOverdue(false);
-                    }}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 text-sm"
-                    title="Reset all filters"
-                  >
-                    <ResetIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Reset</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 text-sm"
-                  >
-                    <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Filters</span>
-                    {showFilters ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-200 animate-slide-down">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3">
-                  {/* Filter Presets */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Quick Filters</label>
-                    <select
-                      value={filterPreset}
-                      onChange={(e) => applyFilterPreset(e.target.value as FilterPreset)}
-                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                    >
-                      <option value="all">All Tasks</option>
-                      <option value="my-tasks">My Tasks</option>
-                      <option value="urgent">Urgent</option>
-                      <option value="due-today">Due Today</option>
-                      <option value="overdue">Overdue</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              >
-                <option value="all">All Status</option>
-                <option value="todo">To Do</option>
-                <option value="in-progress">In Progress</option>
-                <option value="review">Review</option>
-                <option value="blocked">Blocked</option>
-                <option value="done">Done</option>
-              </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
-              <select
-                value={filterPriority}
-                onChange={(e) => setFilterPriority(e.target.value as typeof filterPriority)}
-                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              >
-                <option value="all">All Priorities</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Project</label>
-              <select
-                value={filterProject}
-                onChange={(e) => setFilterProject(e.target.value)}
-                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              >
-                <option value="all">All Projects</option>
-                <option value="no-project">No Project</option>
-                      {projects.map(project => (
-                        <option key={project.id} value={project.id}>
-                          {project.name}
-                        </option>
-                ))}
-              </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
-              <select
-                value={filterCountry}
-                onChange={(e) => setFilterCountry(e.target.value)}
-                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              >
-                <option value="all">All Countries</option>
-                      {countries.map(country => (
-                        <option key={country.id} value={country.id}>
-                          {country.flag} {country.name}
-                        </option>
-                ))}
-              </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Assignee</label>
-              <select
-                value={filterAssignee}
-                onChange={(e) => setFilterAssignee(e.target.value)}
-                      className="w-full text-sm py-1.5 rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              >
-                <option value="all">All Assignees</option>
-                      {Array.from(new Set(tasks.map(t => t.assignee).filter(Boolean))).map(assignee => (
-                        <option key={assignee} value={assignee}>
-                          {getUserName(assignee)}
-                        </option>
-                ))}
-              </select>
-            </div>
-                </div>
-              </div>
-            )}
-            </div>
-          </div>
+          <TaskFilters
+            view={view}
+            onViewChange={setView}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            filterMe={filterMe}
+            onFilterMeToggle={() => setFilterMe(!filterMe)}
+            filterOverdue={filterOverdue}
+            onFilterOverdueToggle={() => setFilterOverdue(!filterOverdue)}
+            onResetFilters={() => {
+              setSearchTerm('');
+              setFilterStatus('all');
+              setFilterPriority('all');
+              setFilterAssignee('all');
+              setFilterPreset('all');
+              setFilterDepartment('all');
+              setFilterProject('all');
+              setFilterCountry('all');
+              setFilterMe(false);
+              setFilterOverdue(false);
+            }}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            filterPreset={filterPreset}
+            onFilterPresetChange={applyFilterPreset}
+            filterStatus={filterStatus}
+            onFilterStatusChange={setFilterStatus}
+            filterPriority={filterPriority}
+            onFilterPriorityChange={setFilterPriority}
+            filterProject={filterProject}
+            onFilterProjectChange={setFilterProject}
+            filterCountry={filterCountry}
+            onFilterCountryChange={setFilterCountry}
+            filterAssignee={filterAssignee}
+            onFilterAssigneeChange={setFilterAssignee}
+            projects={projects}
+            countries={countries}
+            tasks={tasks}
+            getUserName={getUserName}
+          />
 
           {/* Tasks View */}
           {loading ? (
@@ -964,22 +631,7 @@ export default function Tasks() {
           )}
 
           {filteredTasks.length === 0 && !loading && (
-            <div className="text-center py-16 bg-white rounded-xl shadow-md">
-              <div className="max-w-md mx-auto">
-                <div className="p-4 bg-primary-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                  <CheckSquare className="h-10 w-10 text-primary-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No tasks found</h3>
-                <p className="text-gray-600 mb-6">Try adjusting your filters or create a new task</p>
-                <button
-                  onClick={() => setShowTaskForm(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
-                >
-                  <Plus className="h-5 w-5" />
-                  Create New Task
-                </button>
-              </div>
-            </div>
+            <TaskEmptyState onCreateTask={() => setShowTaskForm(true)} />
           )}
         </div>
       </div>
@@ -1029,6 +681,9 @@ export default function Tasks() {
         onClearSelection={() => setSelectedTaskIds([])}
         users={users}
       />
+
+      {/* Floating Action Button */}
+      <FloatingActionButton onClick={() => setShowTaskForm(true)} />
     </div>
   );
 }
