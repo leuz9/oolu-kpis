@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, User, Sparkles, Zap, Target, AlertCircle, CheckCircle2, Clock, Flame, Save, Plus, Trash2, Pencil, CheckSquare } from 'lucide-react';
+import { X, Calendar, User, Sparkles, Zap, Target, AlertCircle, AlertTriangle, CheckCircle2, Clock, Flame, Save, Plus, Trash2, Pencil, CheckSquare } from 'lucide-react';
 import { projectService } from '../../../services/projectService';
 import { userService } from '../../../services/userService';
 import { useAuth } from '../../../contexts/AuthContext';
