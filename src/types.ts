@@ -4,6 +4,7 @@ export type UserRole = 'admin' | 'director' | 'manager' | 'team_lead' | 'senior_
 export interface User {
   id: string;
   email: string;
+  microsoftEmail?: string;
   displayName: string;
   role: UserRole;
   department: string;
@@ -14,6 +15,7 @@ export interface User {
   createdAt: string;
   lastLogin: string;
   lastSeen?: string;
+  authProvider?: 'password' | 'google.com' | 'microsoft.com';
   permissions: RolePermissions;
   customClaims: {
     role: UserRole;

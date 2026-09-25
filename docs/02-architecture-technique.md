@@ -49,6 +49,8 @@
 
 `AuthProvider` dépend de Firebase Auth et charge le document utilisateur depuis Firestore. `NotificationProvider` dépend de `useAuth`, initialise FCM si possible, puis écoute les notifications Firestore de l'utilisateur courant.
 
+`AuthProvider` gère trois méthodes de connexion: email/mot de passe, Microsoft Entra et Google Workspace. Il valide les domaines SSO, provisionne les nouveaux profils employés et assure la liaison Google avec les comptes legacy afin de conserver leur UID Firebase.
+
 ## Routage
 
 Le routage est centralisé dans `src/App.tsx`.

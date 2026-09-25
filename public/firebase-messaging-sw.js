@@ -3,7 +3,7 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compa
 
 firebase.initializeApp({
   apiKey: 'AIzaSyDD59rXRknEslkf2b2Ca9w08j1aN3EWstU',
-  authDomain: 'oolusolar-9f574.firebaseapp.com',
+  authDomain: 'okrs.oolu.energy',
   projectId: 'oolusolar-9f574',
   storageBucket: 'oolusolar-9f574.firebaseapp.com',
   messagingSenderId: '690083719978',

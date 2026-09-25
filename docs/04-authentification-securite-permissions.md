@@ -7,12 +7,45 @@ L'authentification repose sur Firebase Auth. Le contexte `AuthProvider` expose:
 | Méthode | Rôle |
 | --- | --- |
 | `login(email, password)` | Connexion via email/password puis mise à jour de `lastLogin`. |
+| `loginWithMicrosoft()` | Connexion Microsoft Entra mono-tenant pour `@igniteaccess.com`. |
+| `loginWithGoogle()` | Connexion Google Workspace pour `@ignite.solar`. |
+| `linkGoogleWithPassword(password)` | Liaison ponctuelle de Google à un compte mot de passe existant. |
 | `register(email, password, displayName)` | Création Firebase Auth, mise à jour du profil Auth, création du document `users/{uid}`. |
 | `logout()` | Mise à jour de `lastSeen`, déconnexion Firebase Auth et nettoyage de l'état local. |
 | `updateUserProfile(data)` | Mise à jour du document utilisateur et du profil Firebase Auth pour nom/photo. |
 | `changePassword(currentPassword, newPassword)` | Réauthentification puis mise à jour du mot de passe. |
 
 Le profil applicatif est stocké dans Firestore, collection `users`. Sans document utilisateur correspondant, `AuthProvider` met `user` à `null`.
+
+## Single Sign-On
+
+### Microsoft Entra
+
+Microsoft utilise le provider Firebase `microsoft.com`. Le tenant est imposé par `VITE_MICROSOFT_TENANT_ID`, puis le domaine de l'adresse retournée est validé contre `VITE_MICROSOFT_ALLOWED_DOMAIN`.
+
+#### Migration progressive depuis Ignite Solar
+
+Lors de la premiere connexion Microsoft, OKRFlow rapproche automatiquement `prenom.nom@igniteaccess.com` de `prenom.nom@ignite.solar`. Si le profil legacy existe, aucun nouveau profil metier n'est cree. L'utilisateur doit confirmer une seule fois l'ancien compte avec Google ou avec son mot de passe OKRFlow; le credential Microsoft est ensuite lie au meme UID Firebase.
+
+Cette liaison conserve les roles, permissions, objectifs, taches et evaluations rattaches au UID existant. Les connexions Microsoft suivantes ne demandent plus de confirmation.
+
+La correspondance automatique repose sur la partie situee avant `@`. Les utilisateurs dont l'identifiant a change entre les deux domaines doivent etre rapproches manuellement par un administrateur avant leur premiere connexion Microsoft. Il ne faut jamais fusionner deux profils uniquement sur le nom affiche.
+
+Le parcours est implemente mais le bouton reste temporairement desactive tant que la configuration administrateur Entra n'est pas terminee.
+
+Un utilisateur `@igniteaccess.com` sans profil Firestore reçoit automatiquement un profil `employee`, sans département, pays ou droits administrateur.
+
+### Google Workspace
+
+Google utilise le provider Firebase `google.com` avec le hint `hd=ignite.solar`. L'adresse retournée est ensuite validée contre `VITE_GOOGLE_ALLOWED_DOMAIN`; le hint seul n'est pas considéré comme un contrôle de sécurité.
+
+Si l'adresse possède déjà un compte Firebase email/mot de passe, l'application conserve le credential Google en mémoire, demande le mot de passe existant, puis appelle `linkWithCredential`. Le document `users/{uid}` et toutes les relations métier restent ainsi attachés au même UID.
+
+Les credentials OAuth en attente ne sont pas persistés dans `localStorage` ou Firestore. Une actualisation de la page oblige à recommencer la connexion Google.
+
+### Refus d'accès
+
+Une identité OAuth sans email ou hors du domaine autorisé est immédiatement déconnectée. Le contrôle de domaine côté client complète, sans remplacer, les restrictions du tenant Entra et la configuration des providers Firebase.
 
 ## Routes privées
 
@@ -164,3 +197,4 @@ Les contrôles côté frontend ne remplacent pas les règles Firestore. Toute ac
 - La suppression Firebase Auth dans `adminService.deleteUser` ne supprime que l'utilisateur courant si son UID correspond à la cible; un client web ne peut pas supprimer arbitrairement d'autres comptes Auth sans backend Admin SDK.
 - Les tokens FCM sont stockés dans un champ `fcmTokens` qui semble être une valeur unique, pas une liste multi-device.
 - Les permissions sont dupliquées entre `customClaims`, `permissions` Firestore et `config/roles.ts`; il faut définir une source d'autorité.
+- Les secrets OAuth Microsoft et Google doivent rester dans les consoles des fournisseurs/Firebase et ne jamais être exposés via une variable `VITE_*`.

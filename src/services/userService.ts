@@ -1,5 +1,4 @@
 import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { db } from '../config/firebase';
 import { ROLES } from '../config/roles';
 import type { User, UserRole, TeamMember } from '../types';
@@ -20,7 +19,8 @@ export const userService = {
         displayName: data.displayName,
         role: defaultRole,
         department: '',
-        photoURL: null,
+        photoURL: data.photoURL || null,
+        authProvider: data.authProvider || 'password',
         isAdmin: false,
         createdAt: timestamp,
         lastLogin: timestamp,
@@ -40,6 +40,92 @@ export const userService = {
     }
   },
 
+  async getOrCreateSSOUser(
+    userId: string,
+    data: Pick<User, 'email' | 'displayName'> & {
+      photoURL?: string | null;
+      authProvider: 'google.com' | 'microsoft.com';
+    }
+  ) {
+    const userRef = doc(db, USER_COLLECTION, userId);
+    const existingUser = await getDoc(userRef);
+    const timestamp = new Date().toISOString();
+
+    if (existingUser.exists()) {
+      await updateDoc(userRef, {
+        lastLogin: timestamp,
+        authProvider: data.authProvider,
+        ...(data.displayName ? { displayName: data.displayName } : {}),
+        ...(data.photoURL ? { photoURL: data.photoURL } : {})
+      });
+
+      return {
+        id: existingUser.id,
+        ...existingUser.data(),
+        lastLogin: timestamp,
+        authProvider: data.authProvider,
+        ...(data.displayName ? { displayName: data.displayName } : {}),
+        ...(data.photoURL ? { photoURL: data.photoURL } : {})
+      } as User;
+    }
+
+    const defaultRole: UserRole = 'employee';
+    const employeePermissions = ROLES[defaultRole].permissions;
+    const userData: User = {
+      id: userId,
+      email: data.email,
+      displayName: data.displayName || data.email.split('@')[0],
+      role: defaultRole,
+      department: '',
+      photoURL: data.photoURL || null,
+      isAdmin: false,
+      countryIds: [],
+      createdAt: timestamp,
+      lastLogin: timestamp,
+      authProvider: data.authProvider,
+      permissions: employeePermissions,
+      customClaims: {
+        role: defaultRole,
+        permissions: employeePermissions,
+        isAdmin: false
+      }
+    };
+
+    await setDoc(userRef, userData);
+    return userData;
+  },
+
+  async getUserByEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const usersQuery = query(
+      collection(db, USER_COLLECTION),
+      where('email', '==', normalizedEmail)
+    );
+    const snapshot = await getDocs(usersQuery);
+
+    if (snapshot.empty) return null;
+
+    const userDoc = snapshot.docs[0];
+    return { id: userDoc.id, ...userDoc.data() } as User;
+  },
+
+  async getUserForMicrosoftEmail(microsoftEmail: string) {
+    const normalizedEmail = microsoftEmail.trim().toLowerCase();
+    const mappedUsersQuery = query(
+      collection(db, USER_COLLECTION),
+      where('microsoftEmail', '==', normalizedEmail)
+    );
+    const mappedUsers = await getDocs(mappedUsersQuery);
+
+    if (!mappedUsers.empty) {
+      const userDoc = mappedUsers.docs[0];
+      return { id: userDoc.id, ...userDoc.data() } as User;
+    }
+
+    const localPart = normalizedEmail.split('@')[0];
+    return this.getUserByEmail(`${localPart}@ignite.solar`);
+  },
+
   async getUser(userId: string) {
     try {
       const userDoc = await getDoc(doc(db, USER_COLLECTION, userId));
@@ -47,9 +133,9 @@ export const userService = {
         throw new Error('User not found');
       }
       return { id: userDoc.id, ...userDoc.data() } as User;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Only log non-"User not found" errors to avoid console spam
-      if (error?.message !== 'User not found') {
+      if (!(error instanceof Error) || error.message !== 'User not found') {
         console.error('Error getting user:', error);
       }
       throw error;
