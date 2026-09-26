@@ -312,15 +312,15 @@ export default function Appraisals() {
 
             {/* Navigation Tabs */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8 px-6" aria-label="Tabs">
+              <div className="overflow-x-auto border-b border-gray-200">
+                <nav className="flex w-max space-x-4 px-4 sm:space-x-8 sm:px-6" aria-label="Tabs">
                   {menuItems.map((item) => {
                     const Icon = item.icon;
                     return (
                       <button
                         key={item.id}
                         onClick={() => setCurrentView(item.id)}
-                        className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                        className={`flex shrink-0 items-center gap-2 border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
                           currentView === item.id
                             ? 'border-primary-500 text-primary-600'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -335,7 +335,7 @@ export default function Appraisals() {
               </div>
 
               {/* Content */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {currentView === 'dashboard' && (
                   <AppraisalDashboard 
                     cycles={cycles}
