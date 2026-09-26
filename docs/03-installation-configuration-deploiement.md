@@ -102,7 +102,9 @@ La plateforme prend aussi en charge deux fournisseurs SSO:
 > Etat de production : l'application Entra `OKRFlow Production` est configuree en mono-tenant et le fournisseur Firebase `microsoft.com` est actif. Le secret Entra actuel expire le 20 mars 2027 et doit etre renouvele avant cette date dans Entra puis dans Firebase Authentication.
 
 1. Créer une App Registration mono-tenant dans Microsoft Entra.
-2. Ajouter l'URI de redirection Web `https://oolusolar-9f574.firebaseapp.com/__/auth/handler`.
+2. Ajouter les deux URI de redirection Web:
+   - `https://okrs.oolu.energy/__/auth/handler` pour le domaine d'authentification de production;
+   - `https://oolusolar-9f574.firebaseapp.com/__/auth/handler` comme callback Firebase de compatibilite.
 3. Créer un client secret et le saisir uniquement dans Firebase Console, jamais dans `.env`.
 4. Dans Firebase Console > Authentication > Sign-in method, activer Microsoft avec le client ID et le secret.
 5. Renseigner l'identifiant du tenant dans `VITE_MICROSOFT_TENANT_ID`.
