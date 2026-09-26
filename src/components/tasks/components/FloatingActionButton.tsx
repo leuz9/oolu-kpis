@@ -9,7 +9,7 @@ export default function FloatingActionButton({ onClick }: FloatingActionButtonPr
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 text-white rounded-full p-4 sm:p-5 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 active:scale-95 group animate-bounce-subtle hover:animate-none"
+      className="fixed bottom-8 right-8 z-50 hidden items-center justify-center rounded-full bg-gradient-to-r from-primary-600 via-purple-600 to-pink-600 p-5 text-white shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-3xl active:scale-95 group animate-bounce-subtle hover:animate-none sm:flex"
       title="Create New Task (⌘N)"
       aria-label="Create New Task"
     >
