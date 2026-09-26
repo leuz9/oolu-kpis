@@ -6,17 +6,10 @@ import {
   BarChart3, 
   FileText, 
   Star, 
-  Target, 
   TrendingUp,
   Clock,
   CheckCircle,
-  AlertCircle,
-  Plus,
-  Filter,
-  Download,
-  Eye,
-  Edit,
-  Trash2
+  Edit
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { AppraisalService } from '../../services/appraisalService';
@@ -239,8 +232,8 @@ export default function Appraisals() {
         <div className="w-full">
           <div className="space-y-6">
             {/* Header */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                     <Star className="h-8 w-8 text-primary-600" />
@@ -252,13 +245,13 @@ export default function Appraisals() {
                 </div>
                 
                 {/* Cycle Selector */}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 sm:max-w-[50%]">
+                  <div className="flex min-w-0 items-center gap-2">
                     <Calendar className="h-5 w-5 text-gray-500" />
                     <select
                       value={selectedCycle || ''}
                       onChange={(e) => handleCycleChange(e.target.value)}
-                      className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="">Select Cycle</option>
                       {cycles.map(cycle => (

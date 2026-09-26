@@ -122,13 +122,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-[60] bg-black/50 md:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-label="Close navigation"
         />
       )}
 
-      <aside className={`${sidebarOpen ? 'translate-x-0 md:w-64' : '-translate-x-full md:w-20 md:translate-x-0'} fixed inset-y-0 left-0 z-40 flex w-[min(20rem,88vw)] flex-col overflow-y-auto bg-gray-900 shadow-lg transition-all duration-300 ease-in-out`}>
+      <aside className={`${sidebarOpen ? 'translate-x-0 md:w-64' : '-translate-x-full md:w-20 md:translate-x-0'} fixed inset-y-0 left-0 z-[70] flex w-[min(20rem,88vw)] flex-col overflow-y-auto bg-gray-900 shadow-lg transition-all duration-300 ease-in-out`}>
       <div className="p-4 flex items-center justify-between border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
         <div className="flex items-center">
           <img 
@@ -140,7 +140,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
         </div>
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-1 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+          className={`${sidebarOpen ? '' : 'hidden md:block'} p-1 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white`}
           aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
