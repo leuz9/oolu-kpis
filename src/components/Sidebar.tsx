@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -23,7 +24,9 @@ import {
   LogOut,
   Menu,
   X,
-  BookOpen
+  BookOpen,
+  Globe,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -37,11 +40,16 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const location = useLocation();
   const { user, logout } = useAuth();
 
+  useEffect(() => {
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  }, [location.pathname, setSidebarOpen]);
+
   const menuItems = [
     // Main Menu
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Target, label: 'Objectives', path: '/objectives' },
-  { icon: Award, label: 'Annual Appraisals', path: '/appraisals' },
+    { icon: TrendingUp, label: 'Key Results', path: '/key-results' },
+    { icon: Award, label: 'Annual Appraisals', path: '/appraisals' },
     { icon: BookOpen, label: 'Directory', path: '/directory' },
     { icon: Users, label: 'Team', path: '/team' },
     { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
@@ -55,11 +63,12 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     { icon: FileText, label: 'Reports', path: '/reports', adminOnly: true },
     { icon: Shield, label: 'Security', path: '/security', adminOnly: true },
     { icon: Building2, label: 'Departments', path: '/departments', adminOnly: true },
+    { icon: Globe, label: 'Countries', path: '/countries', adminOnly: true },
     { icon: Calendar, label: 'Planning', path: '/planning' },
     { icon: MessageSquare, label: 'Messages', path: 'https://mail.google.com/chat', external: true },
     { icon: Link2, label: 'Integrations', path: '/integrations', adminOnly: true },
     { icon: Database, label: 'API', path: '/api', adminOnly: true },
-    { icon: FileCode, label: 'Support', path: 'https://chat.google.com/room/AAAA3XV7nxY?cls=7', external: true }
+    { icon: FileCode, label: 'Support', path: '/support' }
   ];
 
   // Filter menu items based on user role
@@ -86,10 +95,32 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     } else {
       navigate(path);
     }
+    if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
   return (
-    <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 shadow-lg transition-all duration-300 ease-in-out flex flex-col fixed h-full overflow-y-auto`}>
+    <>
+      {!sidebarOpen && (
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          className="fixed left-3 top-3 z-50 flex h-11 w-11 items-center justify-center rounded-md bg-gray-900 text-white shadow-lg md:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+      )}
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      <aside className={`${sidebarOpen ? 'translate-x-0 md:w-64' : '-translate-x-full md:w-20 md:translate-x-0'} fixed inset-y-0 left-0 z-40 flex w-[min(20rem,88vw)] flex-col overflow-y-auto bg-gray-900 shadow-lg transition-all duration-300 ease-in-out`}>
       <div className="p-4 flex items-center justify-between border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
         <div className="flex items-center">
           <img 
@@ -102,6 +133,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="p-1 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white"
+          aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -142,7 +174,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
           <div className="space-y-2">
             {/* Profile Link */}
             <div
-              onClick={() => navigate('/profile')}
+              onClick={() => handleMenuItemClick('/profile')}
               className={`
                 flex items-center px-4 py-3 cursor-pointer
                 ${location.pathname === '/profile' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
@@ -164,7 +196,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
 
             {/* Settings Link */}
             <div
-              onClick={() => navigate('/settings')}
+              onClick={() => handleMenuItemClick('/settings')}
               className={`
                 flex items-center px-4 py-3 cursor-pointer
                 ${location.pathname === '/settings' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}
@@ -190,6 +222,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
           </div>
         </div>
       )}
-    </div>
+      </aside>
+    </>
   );
 }

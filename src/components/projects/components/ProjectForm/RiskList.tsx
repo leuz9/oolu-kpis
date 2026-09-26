@@ -36,7 +36,7 @@ export default function RiskList({ risks, onAdd, onRemove }: RiskListProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input
             type="text"
             value={newRisk.description}
@@ -52,7 +52,7 @@ export default function RiskList({ risks, onAdd, onRemove }: RiskListProps) {
             placeholder="Mitigation strategy"
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <select
             value={newRisk.impact}
             onChange={e => setNewRisk({ ...newRisk, impact: e.target.value as 'low' | 'medium' | 'high' })}

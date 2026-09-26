@@ -190,7 +190,7 @@ export default function GridView({
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         {companyObjectives.map(objective => renderObjectiveCard(objective))}
       </div>
 

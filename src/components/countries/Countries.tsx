@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Globe, Edit2, Trash2, MapPin, Users, Building2, TrendingUp } from 'lucide-react';
 import { countryService } from '../../services/countryService';
+import Sidebar from '../Sidebar';
 
 interface Country {
   id: string;
@@ -29,6 +30,7 @@ interface CountryFormData {
 }
 
 export default function Countries() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,8 +140,9 @@ export default function Countries() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
-        <div className="w-full">
+      <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <div className={`w-full flex-1 p-3 transition-all duration-300 sm:p-4 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'} lg:p-6`}>
           <div className="animate-pulse">
             <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -157,23 +160,24 @@ export default function Countries() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="w-full p-3 sm:p-4 lg:p-6">
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <div className={`w-full flex-1 p-3 transition-all duration-300 sm:p-4 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'} lg:p-6`}>
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg">
                 <Globe className="h-8 w-8 text-white" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Gestion des Pays</h1>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Gestion des Pays</h1>
                 <p className="text-gray-600 mt-1">Organisez et gérez les pays de votre organisation</p>
               </div>
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              className="flex w-full items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 text-white shadow-lg transition-all duration-200 hover:shadow-xl sm:w-auto"
             >
               <Plus className="h-5 w-5" />
               <span>Nouveau Pays</span>

@@ -86,7 +86,7 @@ export default function Objectives() {
       
       <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
         <div className="w-full">
-          <div className="flex justify-between items-center mb-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Objectives</h1>
               <p className="mt-1 text-sm text-gray-500">
@@ -96,7 +96,7 @@ export default function Objectives() {
                 }
               </p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-3 sm:justify-end">
               <ViewToggle view={view} setView={setView} />
               <button
                 onClick={() => setShowForm(true)}

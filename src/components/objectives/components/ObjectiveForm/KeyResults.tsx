@@ -74,7 +74,7 @@ export default function KeyResults({ keyResults = [], onAdd, onRemove, onUpdate 
                     placeholder="Key Result Title"
                   />
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-4">
+                <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                   <div>
                     <label className="block text-xs text-gray-500">Start Value</label>
                     <input
@@ -131,7 +131,7 @@ export default function KeyResults({ keyResults = [], onAdd, onRemove, onUpdate 
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Start Value</label>
                 <input

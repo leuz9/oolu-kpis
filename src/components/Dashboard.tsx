@@ -278,7 +278,7 @@ export default function Dashboard() {
                       <h3 className="text-sm font-medium text-gray-700">Objectives Progress</h3>
                       <span className="text-sm text-gray-500">{objectives.length} total</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                       <div className="bg-green-50 p-4 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-green-700">On Track</span>
@@ -312,7 +312,7 @@ export default function Dashboard() {
                       <h3 className="text-sm font-medium text-gray-700">Key Results Performance</h3>
                       <span className="text-sm text-gray-500">{keyResults.length} total</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                       <div className="bg-green-50 p-4 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-green-700">Achieved</span>
@@ -346,7 +346,7 @@ export default function Dashboard() {
                       <h3 className="text-sm font-medium text-gray-700">Project Status</h3>
                       <span className="text-sm text-gray-500">{projects.length} total</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-blue-700">In Progress</span>

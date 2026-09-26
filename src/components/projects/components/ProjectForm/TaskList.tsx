@@ -38,7 +38,7 @@ export default function TaskList({ tasks, onAdd, onRemove }: TaskListProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input
             type="text"
             value={newTask.title}
@@ -54,7 +54,7 @@ export default function TaskList({ tasks, onAdd, onRemove }: TaskListProps) {
             placeholder="Task description"
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <select
             value={newTask.priority}
             onChange={e => setNewTask({ ...newTask, priority: e.target.value as Task['priority'] })}

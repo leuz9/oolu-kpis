@@ -147,7 +147,7 @@ export default function Departments() {
       
       <div className={`flex-1 w-full ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 ease-in-out p-3 sm:p-4 lg:p-6`}>
         <div className="w-full">
-          <div className="flex justify-between items-center mb-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Departments</h1>
               <p className="mt-1 text-sm text-gray-500">
@@ -341,7 +341,7 @@ export default function Departments() {
                         {/* Metrics */}
                         <div>
                           <h4 className="text-sm font-medium text-gray-900 mb-4">Metrics</h4>
-                          <div className="grid grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                             <div className="bg-gray-50 p-4 rounded-lg">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center">

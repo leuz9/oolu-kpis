@@ -59,12 +59,32 @@
 
 /* Responsive sidebar adjustments */
 @media (max-width: 768px) {
-  /* On mobile, sidebar should be overlay */
-  .sidebar-fixed {
-    transform: translateX(-100%);
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
   }
-  
-  .sidebar-fixed.open {
-    transform: translateX(0);
+
+  .ml-20,
+  .ml-64 {
+    margin-left: 0 !important;
+  }
+
+  aside ~ .flex-1 {
+    min-width: 0;
+    padding-top: 4rem !important;
+  }
+
+  .fixed.inset-0.z-50:not(.pointer-events-none):not(.transition-opacity) {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+
+  .fixed.inset-0.z-50:not(.pointer-events-none):not(.transition-opacity) > div {
+    max-height: calc(100dvh - 1rem);
+    max-width: 100%;
+    overflow-y: auto;
   }
 }

@@ -33,7 +33,7 @@ export default function KeyResultForm({ onClose, onSubmit, dueDate }: KeyResultF
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-gray-600 bg-opacity-50 p-2 sm:items-center sm:p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-lg">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900">Add Key Result</h2>
@@ -55,7 +55,7 @@ export default function KeyResultForm({ onClose, onSubmit, dueDate }: KeyResultF
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">Target Value</label>
               <input

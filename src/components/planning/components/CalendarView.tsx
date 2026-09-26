@@ -58,7 +58,7 @@ export default function CalendarView({ events, currentDate, onDateChange, onEven
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Calendar Header */}
-      <div className="p-4 flex items-center justify-between border-b">
+      <div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <div className="flex items-center">
           <h2 className="text-lg font-semibold text-gray-900">
             {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -101,7 +101,7 @@ export default function CalendarView({ events, currentDate, onDateChange, onEven
         {/* Week day headers */}
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div key={day} className="bg-gray-50 py-2 text-center">
-            <span className="text-sm font-medium text-gray-500">{day}</span>
+            <span className="text-[10px] font-medium text-gray-500 sm:text-sm">{day.slice(0, 1)}<span className="hidden sm:inline">{day.slice(1)}</span></span>
           </div>
         ))}
 
@@ -109,7 +109,7 @@ export default function CalendarView({ events, currentDate, onDateChange, onEven
         {days.map(({ date, isCurrentMonth, events }, index) => (
           <div
             key={index}
-            className={`min-h-[120px] bg-white p-2 ${
+            className={`min-h-16 bg-white p-1 sm:min-h-[120px] sm:p-2 ${
               isCurrentMonth ? '' : 'bg-gray-50'
             }`}
           >
@@ -127,16 +127,16 @@ export default function CalendarView({ events, currentDate, onDateChange, onEven
               </span>
             </div>
             <div className="space-y-1">
-              {events.map((event) => (
+                {events.slice(0, 2).map((event) => (
                 <button
                   key={event.id}
                   onClick={() => onEventClick(event)}
-                  className={`w-full text-left px-2 py-1 rounded text-xs font-medium border ${getEventColor(
+                  className={`w-full rounded border px-1 py-0.5 text-left text-[10px] font-medium sm:px-2 sm:py-1 sm:text-xs ${getEventColor(
                     event.type
                   )}`}
                 >
                   <div className="truncate">{event.title}</div>
-                  <div className="text-xs opacity-75">
+                  <div className="hidden text-xs opacity-75 sm:block">
                     {new Date(event.start).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit'
@@ -144,6 +144,7 @@ export default function CalendarView({ events, currentDate, onDateChange, onEven
                   </div>
                 </button>
               ))}
+              {events.length > 2 && <div className="text-center text-[10px] text-gray-500">+{events.length - 2}</div>}
             </div>
           </div>
         ))}

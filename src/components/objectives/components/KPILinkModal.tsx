@@ -151,7 +151,7 @@ export default function KPILinkModal({
         </div>
 
         <div className="flex-1 overflow-hidden p-6">
-          <div className="grid grid-cols-2 gap-6 h-full">
+          <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
             {/* Linked KPIs */}
             <div className="flex flex-col">
               <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">

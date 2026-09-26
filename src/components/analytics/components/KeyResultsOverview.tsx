@@ -65,7 +65,7 @@ export default function KeyResultsOverview({ metrics }: KeyResultsOverviewProps)
 
         <div>
           <h3 className="text-sm font-medium text-gray-900 mb-4">Key Results Trends</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
             <div className="bg-gray-50 rounded-lg p-3 text-center">
               <div className="text-green-500 mb-1">↑</div>
               <span className="block text-2xl font-semibold text-gray-900">{metrics.trending.up}</span>

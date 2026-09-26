@@ -30,8 +30,8 @@ export default function ReportForm({ onSubmit, onClose }: ReportFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-gray-600 bg-opacity-50 p-2 sm:items-center sm:p-4">
+      <div className="max-h-[calc(100dvh-1rem)] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <FileText className="h-6 w-6 text-primary-600 mr-2" />
@@ -83,7 +83,7 @@ export default function ReportForm({ onSubmit, onClose }: ReportFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">Frequency</label>
               <select
@@ -114,7 +114,7 @@ export default function ReportForm({ onSubmit, onClose }: ReportFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Date Range</label>
-            <div className="grid grid-cols-2 gap-4 mt-1">
+            <div className="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs text-gray-500">Start Date</label>
                 <input
