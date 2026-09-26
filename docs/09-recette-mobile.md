@@ -59,12 +59,13 @@ Pour chaque route, verifier:
 
 ## Execution du 26 septembre 2026
 
-Version de production validee: `2026-09-26T07:11:57.860Z`.
+Version de production validee: `2026-09-26T07:17:24.281Z`.
 
 - les 22 routes authentifiees ont ete ouvertes en production a 375, 390, 430 et 768 px;
 - la largeur du document est restee egale a celle du viewport sur chaque route;
 - `/users` affiche correctement le refus d'acces pour un administrateur qui n'est pas superadmin;
 - le tiroir mobile masque les actions de la page, reste dans le viewport et se ferme apres navigation;
+- le bouton flottant redondant des taches est masque sur telephone afin de ne pas intercepter les actions des cartes;
 - le bandeau des evaluations permet d'atteindre tous les onglets par defilement horizontal interne;
 - les ecrans denses `/tasks`, `/countries` et `/appraisals` ont ete controles visuellement a 375 px;
 - la modale de creation d'un pays reste dans le viewport et utilise un defilement vertical interne;
