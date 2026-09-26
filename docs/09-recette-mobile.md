@@ -56,3 +56,17 @@ Pour chaque route, verifier:
 - Les tableaux restent complets sur desktop.
 - Le calendrier affiche les heures sur tablette/desktop et un resume compact sur telephone.
 - Aucun test de recette ne doit creer, modifier ou supprimer une donnee de production sans autorisation explicite.
+
+## Execution du 26 septembre 2026
+
+Version de production validee: `2026-09-26T07:11:57.860Z`.
+
+- les 22 routes authentifiees ont ete ouvertes en production a 375, 390, 430 et 768 px;
+- la largeur du document est restee egale a celle du viewport sur chaque route;
+- `/users` affiche correctement le refus d'acces pour un administrateur qui n'est pas superadmin;
+- le tiroir mobile masque les actions de la page, reste dans le viewport et se ferme apres navigation;
+- le bandeau des evaluations permet d'atteindre tous les onglets par defilement horizontal interne;
+- les ecrans denses `/tasks`, `/countries` et `/appraisals` ont ete controles visuellement a 375 px;
+- la modale de creation d'un pays reste dans le viewport et utilise un defilement vertical interne;
+- `/login` et `/register` ont ete controles a 375 px sur la meme version dans une origine locale vierge, afin de conserver la session de recette authentifiee en production;
+- aucune donnee de production n'a ete creee, modifiee ou supprimee pendant cette recette.
