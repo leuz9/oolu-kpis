@@ -41,7 +41,15 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   const { user, logout } = useAuth();
 
   useEffect(() => {
-    if (window.innerWidth < 768) setSidebarOpen(false);
+    const mobileBreakpoint = window.matchMedia('(max-width: 767px)');
+    const closeOnMobile = () => {
+      if (mobileBreakpoint.matches) setSidebarOpen(false);
+    };
+
+    closeOnMobile();
+    mobileBreakpoint.addEventListener('change', closeOnMobile);
+
+    return () => mobileBreakpoint.removeEventListener('change', closeOnMobile);
   }, [location.pathname, setSidebarOpen]);
 
   const menuItems = [
@@ -95,7 +103,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
     } else {
       navigate(path);
     }
-    if (window.innerWidth < 768) setSidebarOpen(false);
+    if (window.matchMedia('(max-width: 767px)').matches) setSidebarOpen(false);
   };
 
   return (
