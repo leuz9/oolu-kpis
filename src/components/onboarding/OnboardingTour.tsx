@@ -3,23 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { onboardingService } from '../../services/onboardingService';
 import { 
-  Home, 
   Target, 
-  PieChart, 
   Users, 
   Briefcase, 
   Book, 
   Bell,
-  UserCog,
   BarChart3,
-  FileText,
   Shield,
   Building2,
   Calendar,
-  MessageSquare,
   Link2,
   Database,
-  FileCode,
   HelpCircle,
   X,
   ChevronRight,
@@ -56,16 +50,16 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     ]
   },
   {
-    id: 'kpis',
-    title: 'Key Performance Indicators',
-    description: 'Monitor and analyze your KPIs',
-    path: '/kpis',
-    icon: <PieChart className="h-8 w-8 text-primary-600" />,
+    id: 'key-results',
+    title: 'Key Results',
+    description: 'Measure progress toward your objectives',
+    path: '/key-results',
+    icon: <BarChart3 className="h-8 w-8 text-primary-600" />,
     features: [
-      'Set up custom KPIs',
-      'Track performance metrics',
-      'View historical data',
-      'Generate KPI reports'
+      'Track measurable outcomes',
+      'Monitor current progress',
+      'Connect results to objectives',
+      'Identify results that need attention'
     ]
   },
   {
@@ -92,7 +86,8 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
       'Assign team members',
       'Track project progress',
       'Manage project tasks and milestones'
-    ]
+    ],
+    adminOnly: true
   },
   {
     id: 'departments',
@@ -122,16 +117,16 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     ]
   },
   {
-    id: 'messaging',
-    title: 'Team Communication',
-    description: 'Collaborate with your team',
-    path: '/messages',
-    icon: <MessageSquare className="h-8 w-8 text-primary-600" />,
+    id: 'notifications',
+    title: 'Notifications',
+    description: 'Stay informed about important activity',
+    path: '/notifications',
+    icon: <Bell className="h-8 w-8 text-primary-600" />,
     features: [
-      'Real-time messaging',
-      'Create channels and groups',
-      'Share files and resources',
-      'Direct messaging'
+      'Review recent notifications',
+      'Filter updates by status',
+      'Mark notifications as read',
+      'Open notification preferences'
     ]
   },
   {
